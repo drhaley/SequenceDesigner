@@ -10,4 +10,4 @@ __pycache__
 __run__.py
 
 #don't put user-specific settings on the repo
-#user_settings.py
+user_settings.py
