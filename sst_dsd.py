@@ -1,10 +1,12 @@
 '''
-Shipped with DNA single-stranded tile (SST) sequence designer used in the following publication.
+Originally shipped with DNA single-stranded tile (SST) sequence designer used in the following publication.
  "Diverse and robust molecular algorithms using reprogrammable DNA self-assembly"
  Woods*, Doty*, Myhrvold, Hui, Zhou, Yin, Winfree. (*Joint first co-authors)
  Nature, 2019
 
 Generally sst_dsd processes Python 'ACTG' strings (as opposed to numpy arrays which are processed by dsd).
+
+Additional edits made by David Haley
 '''
 
 from __future__ import print_function
@@ -14,7 +16,12 @@ import math, string, random, sys, os
 import subprocess as sub
 from multiprocessing.pool import ThreadPool
 import itertools
-import user_settings
+
+try:
+    import user_settings
+except ImportError:
+    user_settings = None
+
 
 # from lru_cache import lru_cache # this was used when we had a hand-rolled lru_cache, but it's now in Python 3
 try:
