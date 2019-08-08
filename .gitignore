@@ -1,0 +1,13 @@
+#no IDE files
+.vscode
+.idea
+
+#no PyCache
+__pycache__
+*.pyc
+
+#no dev CLI helper scripts
+__run__.py
+
+#don't put user-specific settings on the repo
+#user_settings.py
