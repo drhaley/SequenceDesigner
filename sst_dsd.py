@@ -16,6 +16,7 @@ import math, string, random, sys, os
 import subprocess as sub
 from multiprocessing.pool import ThreadPool
 import itertools
+import dsd
 
 try:
     import user_settings
