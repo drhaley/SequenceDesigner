@@ -1,17 +1,11 @@
-import abc   #abstract classes
+from oracle.abstract import AbstractOracle
 
-class AbstractOracle(abc.ABC):
-    @abc.abstractmethod
-    def self_affinity(sequence, temperature):
-        pass
-
-    @abc.abstractmethod
-    def binding_affinity(sequence1, sequence2, temperature):
-        pass
-
-
-class DebugOracle(AbstractOracle):
+class Oracle(AbstractOracle):
     #for testing purposes only; do not use for design purposes
+
+    def __init__(self, *args):
+        print("*"*80 + "\nWARNING: Instantiated Debug Oracle, do not deploy!\n" + "*"*80)
+        super().__init__(*args)
     
     __LOOPOUT_SIZE = 4
 

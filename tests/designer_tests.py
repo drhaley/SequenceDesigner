@@ -10,63 +10,62 @@ sys.path.append(
 	)
 )
 
-#project imports
-import dsd
-import sst_dsd
 
-class legacy_code_tests(unittest.TestCase):
-	TEST_TEMPERATURE = 50.0
-	BINDING_STRENGTH_BOUND = 10000.0
+###############################################
+#TODO: Iterate over all oracles
+import oracle.nupack as oracle_lib
+#import oracle.debug as oracle_lib
+###############################################
+#choose which sequence iterator to use here.  TODO: tie this option to the command-line
+import sequence_iterator.exhaustive as sequence_iterator_lib
+###############################################
 
-	def test_wc(self):
-		seq = "ATCG"
-		complement_seq = "CGAT"
-		self.assertEqual(complement_seq, sst_dsd.wc(seq))
+class oracle_tests(unittest.TestCase):
+	__TEMPERATURE = 40.0
 
-	def test_domain_equal_strength(self):
-		seq = "AAAAAAACCCCCCCC"
-		seq_is_strongly_bound_to_complement = sst_dsd.domain_equal_strength(
-			seq, self.TEST_TEMPERATURE, 0, self.BINDING_STRENGTH_BOUND
-		)
-		self.assertTrue(seq_is_strongly_bound_to_complement)
+	def __init__(self, *args):
+		self.__oracle = oracle_lib.Oracle()
+		super().__init__(*args)
 
 	def test_hairpin(self):
-		strong_binding_energy = sst_dsd.hairpin(
+		strong_binding_energy = self.__oracle.self_affinity(
 			"GGGGGGGGGGGGGGGGGGGGGGGGGAAATCCCCCCCCCCCCC",
-			self.TEST_TEMPERATURE
+			self.__TEMPERATURE
 		)
 		self.assertTrue(strong_binding_energy < 0.0)
-		weak_binding_energy = sst_dsd.hairpin(
+		weak_binding_energy = self.__oracle.self_affinity(
 			"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-			self.TEST_TEMPERATURE
+			self.__TEMPERATURE
 		)
 		self.assertTrue(weak_binding_energy >= 0.0)
 
 	def test_binding(self):
 		seq1 = "CCCC"
-		seq2 = sst_dsd.wc(seq1)
-		strong_binding_energy = sst_dsd.binding(seq1, seq2, self.TEST_TEMPERATURE)
+		seq2 = "GGGG"
+
+		strong_binding_energy = self.__oracle.binding_affinity(seq1, seq2, self.__TEMPERATURE)
 		self.assertTrue(strong_binding_energy < 0.0)
 
-		weak_binding_energy = sst_dsd.binding(seq1, seq1, self.TEST_TEMPERATURE)
+		weak_binding_energy = self.__oracle.binding_affinity(seq1, seq1, self.__TEMPERATURE)
 		self.assertTrue(weak_binding_energy > 0.0)
 
-	def test_duplex(self):
-		seq1 = "AAAAAACCCCCCCT"
-		seq2 = sst_dsd.wc(seq1)
-		duplex_binding_energy = sst_dsd.duplex(seq1, self.TEST_TEMPERATURE)
-		duplex_binding_energy_using_binding_method = sst_dsd.binding(seq1, seq2, self.TEST_TEMPERATURE)
-		self.assertEqual(duplex_binding_energy, duplex_binding_energy_using_binding_method)
 
-	def test_randomseq(self):
-		sst_dsd.randomseq(10)
+class sequence_iterator_checks(unittest.TestCase):
+	def __init__(self, *args):
+		self.__sequence_iterator = sequence_iterator_lib.SequenceIterator()
+		super().__init__(*args)
 
+	def test_grab_many_sequences(self):
+		NUMBER_OF_GRABS = 100
+		for _ in range(NUMBER_OF_GRABS):
+			seq = self.__sequence_iterator.next()
 	
 	
 class python_syntax_checks(unittest.TestCase):
 	def test_f_strings(self):
 		self.assertEqual(f"{3}", "3")
 		self.assertNotEqual(f"{4}", "3")
+
 
 if __name__ == "__main__":
 	unittest.main()
