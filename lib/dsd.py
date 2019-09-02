@@ -12,7 +12,6 @@ Shipped with DNA single-stranded tile (SST) sequence designer used in the follow
 
 
 import numpy as np
-import sst_dsd
 import itertools as it
 
 # from lru_cache import lru_cache # this was used when we had a hand-rolled lru_cache, but it's now in Python 3

@@ -16,6 +16,7 @@ import math, string, random, sys, os
 import subprocess as sub
 from multiprocessing.pool import ThreadPool
 import itertools
+import lib.dsd as dsd
 
 try:
     import user_settings
@@ -32,21 +33,21 @@ except ImportError:
 
 global_thread_pool = ThreadPool()
 
-viennaRNA_PARAMETER_SET_DIRECTORY = 'share/ViennaRNA/'
-try:
-    viennaRNA_PARAMETER_SET_DIRECTORY = user_settings.PATH_TO_VIENNARNA
-except AttributeError:
-    try:  
-        os.environ["VIENNARNA_PARAMS_PATH"]
-        viennaRNA_PARAMETER_SET_DIRECTORY = os.environ.get('VIENNARNA_PARAMS_PATH')
-    except KeyError: 
-        print("Please set the environment path variable VIENNARNA_PARAMS_PATH to the location of the ViennaRNA parameters (dna_mathews1999.par and dna_mathews2004.par), ")
-        print("For example by typing the following command (or putting it in your shell startup routine, e.g. for bash users in .bashrc):")
-        print("export VIENNARNA_PARAMS_PATH=/usr/local/share/ViennaRNA/")
-        sys.exit(1)
+# viennaRNA_PARAMETER_SET_DIRECTORY = 'share/ViennaRNA/'
+# try:
+#     viennaRNA_PARAMETER_SET_DIRECTORY = user_settings.PATH_TO_VIENNARNA
+# except AttributeError:
+#     try:  
+#         os.environ["VIENNARNA_PARAMS_PATH"]
+#         viennaRNA_PARAMETER_SET_DIRECTORY = os.environ.get('VIENNARNA_PARAMS_PATH')
+#     except KeyError: 
+#         print("Please set the environment path variable VIENNARNA_PARAMS_PATH to the location of the ViennaRNA parameters (dna_mathews1999.par and dna_mathews2004.par), ")
+#         print("For example by typing the following command (or putting it in your shell startup routine, e.g. for bash users in .bashrc):")
+#         print("export VIENNARNA_PARAMS_PATH=/usr/local/share/ViennaRNA/")
+#         sys.exit(1)
 
     
-DEFAULT_viennaRNA_PARAMETER_SET = viennaRNA_PARAMETER_SET_DIRECTORY+'dna_mathews1999.par'
+# DEFAULT_viennaRNA_PARAMETER_SET = viennaRNA_PARAMETER_SET_DIRECTORY+'dna_mathews1999.par'
 
 # unix path must be able to find NUPACK, and NUPACKHOME must be set, as described in NUPACK installation instructions.
 
@@ -189,112 +190,112 @@ def mfe_binding(seq1,seq2,temperature=53.0, negate=False):
     return mfe((seq1,seq2),temperature,unique_filename_param=seq1+'_'+seq2, negate=negate)
 
 
-def RNAduplex_multiple(seqpairs, temperature_in_C, NA_parameter_set, negate=False):
-    """Calls RNAduplex on a list of pairs, specifically:
-    [ (seq1, seq2), (seq2, seq3), (seq4, seq5), ... ]
-    where seqi is a string over {A,C,T,G}. Temperature is in Celsius.
-    Returns a list (in the same order as seqpairs) of negation of free energy 
-    (so that more favourable means more positive)."""
+# def RNAduplex_multiple(seqpairs, temperature_in_C, NA_parameter_set, negate=False):
+#     """Calls RNAduplex on a list of pairs, specifically:
+#     [ (seq1, seq2), (seq2, seq3), (seq4, seq5), ... ]
+#     where seqi is a string over {A,C,T,G}. Temperature is in Celsius.
+#     Returns a list (in the same order as seqpairs) of negation of free energy 
+#     (so that more favourable means more positive)."""
     
-    # NB: the string NA_parameter_set needs to be exactly the intended filename; 
-    # e.g. any extra whitespace characters causes RNAduplex to default to RNA parameter set without warning the user!
+#     # NB: the string NA_parameter_set needs to be exactly the intended filename; 
+#     # e.g. any extra whitespace characters causes RNAduplex to default to RNA parameter set without warning the user!
     
-    if NA_parameter_set=='':
-        NA_parameter_set = os.path.join(os.path.dirname(__file__),
-                                 DEFAULT_viennaRNA_PARAMETER_SET)    # Gives better agreement with nupack than dna_mathews2004.par. Note that loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
-    else:
-        NA_parameter_set = os.path.join(os.path.dirname(__file__),
-                                 viennaRNA_PARAMETER_SET_DIRECTORY+NA_parameter_set)    # Gives better agreement with nupack than dna_mathews2004.par. Note that loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
+#     if NA_parameter_set=='':
+#         NA_parameter_set = os.path.join(os.path.dirname(__file__),
+#                                  DEFAULT_viennaRNA_PARAMETER_SET)    # Gives better agreement with nupack than dna_mathews2004.par. Note that loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
+#     else:
+#         NA_parameter_set = os.path.join(os.path.dirname(__file__),
+#                                  viennaRNA_PARAMETER_SET_DIRECTORY+NA_parameter_set)    # Gives better agreement with nupack than dna_mathews2004.par. Note that loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
 
-    if not os.path.isfile(NA_parameter_set):
-        raise ValueError('RNAduplex error: Error reading parameter file: ' + NA_parameter_set)
+#     if not os.path.isfile(NA_parameter_set):
+#         raise ValueError('RNAduplex error: Error reading parameter file: ' + NA_parameter_set)
 
-    # process the input into a string
-    user_input = '\n'.join(seqpair[0]+'\n'+seqpair[1] for seqpair in seqpairs) + '\n@\n'
+#     # process the input into a string
+#     user_input = '\n'.join(seqpair[0]+'\n'+seqpair[1] for seqpair in seqpairs) + '\n@\n'
 
-    got_results = False
-    dG_list = []
-    while not got_results:
-        # When porting the code from python2 to python3 we found an issue with sub.Popen(). 
-        # Passing either of the keyword arguments universal_newlines=True or encoding='utf8' 
-        # solves the problem for python3.6. For python3.7 (but not 3.6) one can use text=True
-        p=sub.Popen(['RNAduplex','-P', NA_parameter_set, '-T', str(temperature_in_C), '--noGU'], # , '--noconv' make sense to use this, but it's untested by us 
-                     stdin=sub.PIPE,stdout=sub.PIPE,stderr=sub.PIPE)  
+#     got_results = False
+#     dG_list = []
+#     while not got_results:
+#         # When porting the code from python2 to python3 we found an issue with sub.Popen(). 
+#         # Passing either of the keyword arguments universal_newlines=True or encoding='utf8' 
+#         # solves the problem for python3.6. For python3.7 (but not 3.6) one can use text=True
+#         p=sub.Popen(['RNAduplex','-P', NA_parameter_set, '-T', str(temperature_in_C), '--noGU'], # , '--noconv' make sense to use this, but it's untested by us 
+#                      stdin=sub.PIPE,stdout=sub.PIPE,stderr=sub.PIPE)  
 
-        try: 
-          output, stderr = p.communicate(user_input.encode())
-          output = output.decode()
-          stderr = stderr.decode()
-        except BaseException as error:
-            p.kill()
-            raise error
-        dG_list = []
-        if stderr.strip() != '': # parsing error from RNAduplex
-            print('Warning or error from RNAduplex: ', stderr)
-            if stderr.split('\n')[0] != 'WARNING: stacking enthalpies not symmetric':
-                print('Stopping RNAduplex from loading default (RNA) parameter set')
-                # print('Re-calling RNAduplex due to an error (using DNA parameter file ' + NA_parameter_set +')')
-                print('RNAduplex says:' + str(stderr.split('\n')[0]))
-                raise ValueError('RNAduplex error: Error reading parameter file: ' + NA_parameter_set)
+#         try: 
+#           output, stderr = p.communicate(user_input.encode())
+#           output = output.decode()
+#           stderr = stderr.decode()
+#         except BaseException as error:
+#             p.kill()
+#             raise error
+#         dG_list = []
+#         if stderr.strip() != '': # parsing error from RNAduplex
+#             print('Warning or error from RNAduplex: ', stderr)
+#             if stderr.split('\n')[0] != 'WARNING: stacking enthalpies not symmetric':
+#                 print('Stopping RNAduplex from loading default (RNA) parameter set')
+#                 # print('Re-calling RNAduplex due to an error (using DNA parameter file ' + NA_parameter_set +')')
+#                 print('RNAduplex says:' + str(stderr.split('\n')[0]))
+#                 raise ValueError('RNAduplex error: Error reading parameter file: ' + NA_parameter_set)
 
-        lines = output.split('\n')
-        for line in lines[:-1]:
-            energy = float( line.split(':')[1].split('(')[1].split(')')[0] )
-            if negate:
-                energy = -energy
-            dG_list.append(energy)
-        if len(lines) - 1 != len(seqpairs):
-            raise ValueError('lengths do not match: #lines:{} #seqpairs:{}'.format(len(lines)-1, len(seqpairs)))
-        got_results = True
+#         lines = output.split('\n')
+#         for line in lines[:-1]:
+#             energy = float( line.split(':')[1].split('(')[1].split(')')[0] )
+#             if negate:
+#                 energy = -energy
+#             dG_list.append(energy)
+#         if len(lines) - 1 != len(seqpairs):
+#             raise ValueError('lengths do not match: #lines:{} #seqpairs:{}'.format(len(lines)-1, len(seqpairs)))
+#         got_results = True
     
-    return dG_list  # returns negated energies (i.e. more positive is more favourable)
+#     return dG_list  # returns negated energies (i.e. more positive is more favourable)
 
-def RNAcofold_multiple(seqpairs, temperature_in_C):
-    """Calls RNAduplex on a list of pairs, specifically:
-    [ (seq1, seq2), (seq2, seq3), (seq4, seq5), ... ]
-    where seqi is a string over {A,C,T,G}. Temperature is in Celsius.
-    Returns a list (in the same order as seqpairs) of negation of free energy
-    (so that more favourable means more positive)."""
+# def RNAcofold_multiple(seqpairs, temperature_in_C):
+#     """Calls RNAduplex on a list of pairs, specifically:
+#     [ (seq1, seq2), (seq2, seq3), (seq4, seq5), ... ]
+#     where seqi is a string over {A,C,T,G}. Temperature is in Celsius.
+#     Returns a list (in the same order as seqpairs) of negation of free energy
+#     (so that more favourable means more positive)."""
 
-    # NB: the string parameter_set needs to be exactly the intended filename;
-    # e.g. any extra whitespace characters causes RNAduplex to default to RNA parameter set without warning the user!
+#     # NB: the string parameter_set needs to be exactly the intended filename;
+#     # e.g. any extra whitespace characters causes RNAduplex to default to RNA parameter set without warning the user!
 
-    # parameter_set = 'dna_mathews2004.par'  # Loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
-    #parameter_set = 'dna_mathews1999.par'    # Gives better agreement with nupack than dna_mathews2004.par
-    parameter_set = os.path.join(os.path.dirname(__file__),
-                                 'nupack_viennaRNA/dna_mathews1999.par')    # Gives better agreement with nupack than dna_mathews2004.par. Note that loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
+#     # parameter_set = 'dna_mathews2004.par'  # Loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
+#     #parameter_set = 'dna_mathews1999.par'    # Gives better agreement with nupack than dna_mathews2004.par
+#     parameter_set = os.path.join(os.path.dirname(__file__),
+#                                  'nupack_viennaRNA/dna_mathews1999.par')    # Gives better agreement with nupack than dna_mathews2004.par. Note that loading parameter set dna_mathews2004.par throws a warning encoded in that parameter set:  WARNING: stacking enthalpies not symmetric
 
 
-    # process the input into a string
-    user_input = '\n'.join(seqpair[0]+'&'+seqpair[1] for seqpair in seqpairs) + '\n@\n'
+#     # process the input into a string
+#     user_input = '\n'.join(seqpair[0]+'&'+seqpair[1] for seqpair in seqpairs) + '\n@\n'
 
-    p=sub.Popen(['RNAcofold','-P', parameter_set, '-T', str(temperature_in_C), '--noGU', '--noconv', '-p'],
-                 stdin=sub.PIPE,stdout=sub.PIPE,stderr=sub.PIPE)
+#     p=sub.Popen(['RNAcofold','-P', parameter_set, '-T', str(temperature_in_C), '--noGU', '--noconv', '-p'],
+#                  stdin=sub.PIPE,stdout=sub.PIPE,stderr=sub.PIPE)
 
-    try:
-        output, stderr = p.communicate(user_input.encode())
-        output = output.decode()
-        stderr = stderr.decode()
-    except BaseException as error:
-        p.kill()
-        raise error
-    print('output="', output, '"')
-    print('stderr="', stderr, '"')
-    if stderr != '': # parsing error from RNAduplex
-        print(stderr)
-        if stderr.split('\n')[0] != 'WARNING: stacking enthalpies not symmetric':
-            print('Stopping RNAduplex from loading default (RNA) parameter set')
-            raise ValueError('RNAduplex error: Error reading parameter file ' + parameter_set)
-    return
+#     try:
+#         output, stderr = p.communicate(user_input.encode())
+#         output = output.decode()
+#         stderr = stderr.decode()
+#     except BaseException as error:
+#         p.kill()
+#         raise error
+#     print('output="', output, '"')
+#     print('stderr="', stderr, '"')
+#     if stderr != '': # parsing error from RNAduplex
+#         print(stderr)
+#         if stderr.split('\n')[0] != 'WARNING: stacking enthalpies not symmetric':
+#             print('Stopping RNAduplex from loading default (RNA) parameter set')
+#             raise ValueError('RNAduplex error: Error reading parameter file ' + parameter_set)
+#     return
 
-    #DD: the code below is unreachable; delete it (or delete this whole function, since it doesn't appear to be called in any file)
-    lines = output.split('\n')
-    dG_list = []
-    for line in lines[:-1]:
-        dG_list.append(-float( line.split(':')[1].split('(')[1].split(')')[0] ))
-    if len(lines) - 1 != len(seqpairs):
-        raise ValueError('lengths do not match: #lines:{} #seqpairs:{}'.format(len(lines)-1, len(seqpairs)))
-    return dG_list  # returns negated energies (i.e. more positive is more favourable)
+#     #DD: the code below is unreachable; delete it (or delete this whole function, since it doesn't appear to be called in any file)
+#     lines = output.split('\n')
+#     dG_list = []
+#     for line in lines[:-1]:
+#         dG_list.append(-float( line.split(':')[1].split('(')[1].split(')')[0] ))
+#     if len(lines) - 1 != len(seqpairs):
+#         raise ValueError('lengths do not match: #lines:{} #seqpairs:{}'.format(len(lines)-1, len(seqpairs)))
+#     return dG_list  # returns negated energies (i.e. more positive is more favourable)
 
 
 # maketrans is in string if python2 but in str if python3
