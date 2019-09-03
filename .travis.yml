@@ -1,0 +1,27 @@
+#this file contains information for automated unit tests
+# via Travis CI on the github repo
+
+#this is a python project, designed to be compatible with 3.6+
+language: python
+
+#this next block could in theory be expanded to include more
+# operating systems, if they were supported
+matrix:
+  include:
+    - name: "Python 3.7 on Xenial Linux"
+      python: 3.7
+      dist: xenial
+      env: PYTHON_EXECUTABLE=python
+    
+#dependencies need to be installed now
+install:
+  - pip3 install --upgrade pip
+  - pip install numpy
+
+# command to run tests
+script:
+  - $PYTHON_EXECUTABLE tests/designer_tests.py
+
+#Don't send emails about tests to repo owner
+notifications:
+  email: false
