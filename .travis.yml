@@ -17,7 +17,7 @@ matrix:
 install:
   - pip3 install --upgrade pip
   - pip install numpy
-  - wget --user drhaley@ucdavis.edu --password {$NUPACK_PASSWORD} http://www.nupack.org/downloads/serve_file/nupack3.2.2.tar.gz
+  - wget --user drhaley@ucdavis.edu --password $NUPACK_PASSWORD http://www.nupack.org/downloads/serve_file/nupack3.2.2.tar.gz
 
 # command to run tests
 script:
