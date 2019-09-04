@@ -14,7 +14,6 @@ sys.path.append(
 )
 
 
-
 ###############################################
 #choose which sequence iterator to use here.
 import sequence_iterator.exhaustive as sequence_iterator_lib
@@ -25,7 +24,7 @@ class OracleTests(unittest.TestCase):
 
 	def __init__(self, *args):
 		self.__oracle_list = [
-			importlib.import_module(f"oracle.{oracle_name}").Oracle()
+			importlib.import_module(f"oracle.{oracle_name}").Oracle(self.__TEMPERATURE)
 			for oracle_name in self.__oracle_names()
 		]
 		super().__init__(*args)
@@ -43,13 +42,11 @@ class OracleTests(unittest.TestCase):
 		for oracle in self.__oracle_list:
 			with self.subTest(oracle = oracle):
 				strong_binding_energy = oracle.self_affinity(
-					"GGGGGGGGGGGGGGGGGGGGGGGGGAAATCCCCCCCCCCCCC",
-					self.__TEMPERATURE
+					"GGGGGGGGGGGGGGGGGGGGGGGGGAAATCCCCCCCCCCCCC"
 				)
 				self.assertTrue(strong_binding_energy < 0.0)
 				weak_binding_energy = oracle.self_affinity(
 					"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
-					self.__TEMPERATURE
 				)
 				self.assertTrue(weak_binding_energy >= 0.0)
 
@@ -59,10 +56,10 @@ class OracleTests(unittest.TestCase):
 				seq1 = "CCCC"
 				seq2 = "GGGG"
 
-				strong_binding_energy = oracle.binding_affinity(seq1, seq2, self.__TEMPERATURE)
+				strong_binding_energy = oracle.binding_affinity(seq1, seq2)
 				self.assertTrue(strong_binding_energy < 0.0)
 
-				weak_binding_energy = oracle.binding_affinity(seq1, seq1, self.__TEMPERATURE)
+				weak_binding_energy = oracle.binding_affinity(seq1, seq1)
 				self.assertTrue(weak_binding_energy >= 0.0)
 
 class SequenceIteratorChecks(unittest.TestCase):
@@ -73,7 +70,7 @@ class SequenceIteratorChecks(unittest.TestCase):
 	def test_grab_many_sequences(self):
 		NUMBER_OF_GRABS = 100
 		for _ in range(NUMBER_OF_GRABS):
-			seq = self.__sequence_iterator.next()
+			_ = self.__sequence_iterator.next()
 	
 	
 class PythonSyntaxChecks(unittest.TestCase):

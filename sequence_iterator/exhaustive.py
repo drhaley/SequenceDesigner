@@ -5,7 +5,6 @@ from sequence_iterator.abstract import AbstractSequenceIterator
 import lib.dsd as dsd
 
 class SequenceIterator(AbstractSequenceIterator):
-
     def __init__(self, *args):
         super().__init__(*args)
 
