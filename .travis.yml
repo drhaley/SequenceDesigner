@@ -52,6 +52,7 @@ install:
   - make install
   - export PATH=$PATH:$PWD/vienna_install/bin
   - export PYTHONPATH=$PYTHONPATH:$PWD/interfaces/Python3
+  - cd ..
 
 # command to run tests
 script:

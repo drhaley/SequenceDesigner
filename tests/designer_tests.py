@@ -53,8 +53,8 @@ class OracleTests(unittest.TestCase):
 	def test_binding(self):
 		for oracle in self.__oracle_list:
 			with self.subTest(oracle = oracle):
-				seq1 = "CCCC"
-				seq2 = "GGGG"
+				seq1 = "CCCCCCCCCCCCCCC"
+				seq2 = "GGGGGGGGGGGGGGG"
 
 				strong_binding_energy = oracle.binding_affinity(seq1, seq2)
 				self.assertTrue(strong_binding_energy < 0.0)
