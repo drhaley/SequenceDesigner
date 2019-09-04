@@ -15,14 +15,27 @@ matrix:
     
 #dependencies need to be installed now
 install:
+  #basic python dependencies (e.g. numpy)
   - pip3 install --upgrade pip
   - pip install numpy
-  - wget --user drhaley@ucdavis.edu --password $NUPACK_PASSWORD http://www.nupack.org/downloads/serve_file/nupack3.2.2.tar.gz
+
+  #install nupack
+  - wget --user $NUPACK_USERNAME --password $NUPACK_PASSWORD http://www.nupack.org/downloads/serve_file/$NUPACK_VERSION.tar.gz
+  - tar xvzf $NUPACK_VERSION.tar.gz
+  - export NUPACKHOME=$PWD/$NUPACK_VERSION
+  - mkdir $NUPACK_VERSION/build
+  - cd $NUPACK_VERSION/build
+  - cmake -DCMAKE_INSTALL_PREFIX=$PWD/../../nupack ../
+  - make
+  - make install
+  - cd ../..
+  - export NUPACKINSTALL=$PWD/nupack
+  - export PATH=$PATH:$NUPACKINSTALL/bin
 
 # command to run tests
 script:
   - $PYTHON_EXECUTABLE tests/designer_tests.py
 
-#Don't send emails about tests to repo owner
+#Don't send emails about tests to the repo owner
 notifications:
   email: false
