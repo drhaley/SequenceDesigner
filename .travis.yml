@@ -8,8 +8,8 @@ language: python
 # we use a cache
 cache:
   directiories:
-    - $HOME/$NUPACK_VERSION/build
-    - $HOME/ViennaRNA-$VIENNA_VERSION
+    - $PWD/$NUPACK_VERSION/build
+    - $PWD/ViennaRNA-$VIENNA_VERSION
 
 #this next block could in theory be expanded to include more
 # operating systems, if they were supported
@@ -27,32 +27,32 @@ install:
   - pip install numpy
 
   #install nupack
-  - "if [ ! -d $HOME/$NUPACK_VERSION/build ]; then \
+  - "if [ ! -d $PWD/$NUPACK_VERSION/build ]; then \
       wget --user $NUPACK_USERNAME --password $NUPACK_PASSWORD \
         http://www.nupack.org/downloads/serve_file/$NUPACK_VERSION.tar.gz; \
-      tar xvzf $NUPACK_VERSION.tar.gz; \
+      tar xvzf $NUPACK_VERSION.tar.gz; \  
+      export NUPACKHOME=$PWD/$NUPACK_VERSION; \
+      mkdir $NUPACK_VERSION/build; \
+      cd $NUPACK_VERSION/build; \
+      cmake -DCMAKE_INSTALL_PREFIX=$PWD/../../nupack ../; \
+      make install; \
+      cd ../..; \
     fi"
-  - export NUPACKHOME=$PWD/$NUPACK_VERSION
-  - mkdir $NUPACK_VERSION/build
-  - cd $NUPACK_VERSION/build
-  - cmake -DCMAKE_INSTALL_PREFIX=$PWD/../../nupack ../
-  #- make
-  - make install
-  - cd ../..
   - export NUPACKINSTALL=$PWD/nupack
   - export PATH=$PATH:$NUPACKINSTALL/bin
 
   #install viennaRNA
-  - "if [ ! -d $HOME/$NUPACK_VERSION/build ]; then \
+  - "if [ ! -d $PWD/$NUPACK_VERSION/build ]; then \
       wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_4_x/ViennaRNA-$VIENNA_VERSION.tar.gz; \
       tar -zxvf ViennaRNA-$VIENNA_VERSION.tar.gz; \
+      cd ViennaRNA-$VIENNA_VERSION; \
+      ./configure --prefix=$PWD/vienna_install; \
+      make install; \
+      cd ..; \
     fi"
-  - cd ViennaRNA-$VIENNA_VERSION
-  - ./configure --prefix=$PWD/vienna_install
-  - make install
-  - export PATH=$PATH:$PWD/vienna_install/bin
-  - export PYTHONPATH=$PYTHONPATH:$PWD/interfaces/Python3
-  - cd ..
+  - export PATH=$PATH:$PWD/ViennaRNA-$VIENNA_VERSION/vienna_install/bin
+  - export PYTHONPATH=$PYTHONPATH:$PWD/ViennaRNA-$VIENNA_VERSION/interfaces/Python3
+      
 
 # command to run tests
 script:
