@@ -7,7 +7,7 @@ language: python
 #so as to avoid compiling nupack and viennaRNA every time,
 # we use a cache
 cache:
-  directiories:
+  directories:
     - $NUPACK_VERSION
     - ViennaRNA-$VIENNA_VERSION
 
