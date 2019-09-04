@@ -10,7 +10,6 @@ cache:
   directiories:
     - $HOME/$NUPACK_VERSION/build
     - $HOME/ViennaRNA-$VIENNA_VERSION
-    - $HOME/vienna_install
 
 #this next block could in theory be expanded to include more
 # operating systems, if they were supported
@@ -49,8 +48,10 @@ install:
       tar -zxvf ViennaRNA-$VIENNA_VERSION.tar.gz; \
     fi"
   - cd ViennaRNA-$VIENNA_VERSION
-  - ./configure --prefix=$PWD/../vienna_install
+  - ./configure --prefix=$PWD/vienna_install
   - make install
+  - export PATH=$PATH:$PWD/vienna_install/bin
+  - export PYTHONPATH=$PYTHONPATH:$PWD/interfaces/Python3
 
 # command to run tests
 script:

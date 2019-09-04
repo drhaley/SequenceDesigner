@@ -2,6 +2,11 @@
 
 from oracle.abstract import AbstractOracle
 
+#TODO: Try to make the system path and python path as smart as possible
+# but right now some of the following commands may be helpful:
+# - export PATH=$PATH:vienna_install_dir/bin
+# - export PYTHONPATH=$PYTHONPATH:vienna_source_dir/interfaces/Python3
+
 class Oracle(AbstractOracle):
     __USE_DUPLEX = True
 
