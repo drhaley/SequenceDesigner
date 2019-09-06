@@ -20,16 +20,25 @@ import sequence_iterator.exhaustive as sequence_iterator_lib
 ###############################################
 
 class OracleTests(unittest.TestCase):
-	__TEMPERATURE = 40.0
+	_TEMPERATURE = 40.0
 
 	def __init__(self, *args):
-		self.__oracle_list = [
-			importlib.import_module(f"oracle.{oracle_name}").Oracle(self.__TEMPERATURE)
-			for oracle_name in self.__oracle_names()
-		]
 		super().__init__(*args)
+		#instantiate all of the different oracles
+		self._oracle_list = []
+		for oracle_name in self._oracle_names():
+			oracle_library = importlib.import_module(f"oracle.{oracle_name}")
+			if oracle_name.lower() == 'vienna':
+				self._oracle_list.extend([
+					oracle_library.Oracle(self._TEMPERATURE, use_duplex=True),
+					oracle_library.Oracle(self._TEMPERATURE, use_duplex=False),
+				])
+			else:
+				self._oracle_list.append(
+					oracle_library.Oracle(self._TEMPERATURE)
+				)
 
-	def __oracle_names(self):
+	def _oracle_names(self):
 		oracle_names = []
 		for file in os.listdir("oracle"):
 			if file.endswith(".py"):
@@ -39,7 +48,7 @@ class OracleTests(unittest.TestCase):
 		return oracle_names
 
 	def test_hairpin(self):
-		for oracle in self.__oracle_list:
+		for oracle in self._oracle_list:
 			with self.subTest(oracle = oracle):
 				strong_binding_energy = oracle.self_affinity(
 					"GGGGGGGGGGGGGGGGGGGGGGGGGAAATCCCCCCCCCCCCC"
@@ -51,15 +60,16 @@ class OracleTests(unittest.TestCase):
 				self.assertTrue(weak_binding_energy >= 0.0)
 
 	def test_binding(self):
-		for oracle in self.__oracle_list:
+		for oracle in self._oracle_list:
 			with self.subTest(oracle = oracle):
-				seq1 = "CCCCCCCCCCCCCCC"
-				seq2 = "GGGGGGGGGGGGGGG"
+				polyC = "CCCCCCCCCCCCCCC"
+				polyG = "GGGGGGGGGGGGGGG"
+				almost_polyC = "CCCCCCCCCCCCCCA"
 
-				strong_binding_energy = oracle.binding_affinity(seq1, seq2)
+				strong_binding_energy = oracle.binding_affinity(polyC, polyG)
 				self.assertTrue(strong_binding_energy < 0.0)
 
-				weak_binding_energy = oracle.binding_affinity(seq1, seq1)
+				weak_binding_energy = oracle.binding_affinity(polyC, almost_polyC)
 				self.assertTrue(weak_binding_energy >= 0.0)
 
 class SequenceIteratorChecks(unittest.TestCase):

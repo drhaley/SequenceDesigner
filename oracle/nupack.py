@@ -6,20 +6,20 @@ from oracle.abstract import AbstractOracle
 
 class Oracle(AbstractOracle):
     def self_affinity(self, sequence):
-        return self.__pfunc(sequence)
+        return self._pfunc(sequence)
 
     def binding_affinity(self, sequence1, sequence2):
-        return self.__pfunc(sequence1,sequence2)
+        return self._pfunc(sequence1,sequence2)
 
-    __R = 0.0019872041 # Boltzmann's constant in kcal/mol/K
+    _R = 0.0019872041 # Boltzmann's constant in kcal/mol/K
     
-    def __dGadjust(self, temperature, sequence_length):
+    def _dGadjust(self, temperature, sequence_length):
         water_concentration = 55.14 # molar concentration of water at 37 C; ignore temperature dependence, ~5%
-        __K = temperature + 273.15 # Kelvin
-        adjusting_factor = (self.__R)*(__K)*math.log(water_concentration) # converts from NUPACK mole fraction units to molar units, per association
+        _K = temperature + 273.15 # Kelvin
+        adjusting_factor = (self._R)*(_K)*math.log(water_concentration) # converts from NUPACK mole fraction units to molar units, per association
         return adjusting_factor*(sequence_length-1)
 
-    def __pfunc(self, *sequences):
+    def _pfunc(self, *sequences):
         """Calls NUPACK's pfunc on a complex consisting of the unique strands in
         sequences, returns dG.  temperature is in Celsius."""
         user_input = str(len(sequences)) + '\n' + '\n'.join(sequences) + '\n' + ' '.join(map(str,list(range(1,len(sequences)+1))))
@@ -48,5 +48,5 @@ class Oracle(AbstractOracle):
         else:
             dG = float(dG_str)
         
-        dG += self.__dGadjust(self._temperature,len(sequences))
+        dG += self._dGadjust(self._temperature,len(sequences))
         return dG
