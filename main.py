@@ -10,8 +10,8 @@ sys.path.append(os.getcwd())
 
 ###############################################
 #choose which oracle to use here.  TODO: tie this option to the command-line
-#import oracle.debug as oracle_lib
-import oracle.nupack as oracle_lib
+import oracle.nupack as nupack_lib
+import oracle.vienna as vienna_lib
 ###############################################
 #choose which sequence iterator to use here.  TODO: tie this option to the command-line
 import sequence_iterator.exhaustive as sequence_iterator_lib
@@ -28,7 +28,7 @@ def main():
 	# oracle = oracle_lib.Oracle()
 	# sequence_iterator = sequence_iterator_lib.SequenceIterator()
 
-	# TEMPERATURE = 40.0
+	TEMPERATURE = 40.0
 
 	# sequences = [
 	# 	sequence_iterator.next()
@@ -45,9 +45,9 @@ def main():
 	vienna_CLI = vienna_lib.Oracle(temperature=TEMPERATURE,use_subprocess=True)
 	nupack = nupack_lib.Oracle(temperature=TEMPERATURE)
 
-	print(vienna_API.binding_affinity(*TEST_CASE))
-	print(vienna_CLI.binding_affinity(*TEST_CASE))
-	print(nupack.binding_affinity(*TEST_CASE))
+	print(f"Vienna (Python): {vienna_API.binding_affinity(*TEST_CASE)}")
+	print(f"Vienna (CLI)   : {vienna_CLI.binding_affinity(*TEST_CASE)}")
+	print(f"Nupack         : {nupack.binding_affinity(*TEST_CASE)}")
 
 
 if __name__ == "__main__":
