@@ -13,7 +13,6 @@ sys.path.append(
 	)
 )
 
-
 ###############################################
 #choose which sequence iterator to use here.
 import sequence_iterator.exhaustive as sequence_iterator_lib
@@ -21,22 +20,45 @@ import sequence_iterator.exhaustive as sequence_iterator_lib
 
 class OracleTests(unittest.TestCase):
 	_TEMPERATURE = 40.0
+	_MANUALLY_INSTANTIATED_ORACLES = ['vienna']
 
 	def __init__(self, *args):
-		super().__init__(*args)
 		#instantiate all of the different oracles
-		self._oracle_list = []
+		super().__init__(*args)
+
+		#_equivalent_oracles := list of pairs of oracles that return identical results
+		self._equivalent_oracles = self._get_vienna_equivalent_oracles()
+		
+		self._oracle_list = [
+			oracle
+			for oracle_pair in self._equivalent_oracles
+			for oracle in oracle_pair
+		]
+
 		for oracle_name in self._oracle_names():
-			oracle_library = importlib.import_module(f"oracle.{oracle_name}")
-			if oracle_name.lower() == 'vienna':
-				self._oracle_list.extend([
-					oracle_library.Oracle(self._TEMPERATURE, use_duplex=True),
-					oracle_library.Oracle(self._TEMPERATURE, use_duplex=False),
-				])
-			else:
+			if oracle_name.lower() not in self._MANUALLY_INSTANTIATED_ORACLES:
+				oracle_library = self._import_oracle_by_name(oracle_name)
 				self._oracle_list.append(
 					oracle_library.Oracle(self._TEMPERATURE)
 				)
+
+	def _import_oracle_by_name(self, oracle_name):
+		return importlib.import_module(f"oracle.{oracle_name}")
+	
+	def _get_vienna_equivalent_oracles(self):
+		vienna_library = self._import_oracle_by_name('vienna')
+		equivalent_oracles = []
+		for use_duplex in [True, False]:
+			equivalent_oracles.append(
+				[
+					vienna_library.Oracle(
+						self._TEMPERATURE, use_duplex=use_duplex, use_subprocess=use_subprocess
+					)
+					for use_subprocess in [True,False]
+				]
+			)
+		return equivalent_oracles
+			
 
 	def _oracle_names(self):
 		oracle_names = []
@@ -71,6 +93,37 @@ class OracleTests(unittest.TestCase):
 
 				weak_binding_energy = oracle.binding_affinity(polyC, almost_polyC)
 				self.assertTrue(weak_binding_energy >= 0.0)
+
+	def test_equivalent_oracles(self):
+		TOLERANCE = 0.50  #TODO: Why is Vienna not agreeing strongly with itself!?!
+
+		SELF_AFFINITY_TEST_SET = [
+			"AAAATTTTTCCCCCGGGGGGG",
+			"CCCCCCGGGGGGAAAATTT",
+			"ATCGATCGATCGATCG",
+			"AAAAAAAAAAAAAAAAA",
+			"ATCATCATCATCATCA",
+			"ATC",
+		]
+		BINDING_AFFINITY_TEST_SET = [
+			("AAAATTTTTCCCCCGGGGGGG", "CCCCCCGGGGGGAAAATTT"),
+			("ATCGATCGATCGATCG", "AAAAAAAAAAAAAA"),
+			("AAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAA"),
+			("ATCATCATCATCATCA", "ATC"),
+		]
+		for oracle1, oracle2 in self._equivalent_oracles:
+			for test_case in SELF_AFFINITY_TEST_SET:
+				value1 = oracle1.self_affinity(test_case)
+				value2 = oracle2.self_affinity(test_case)
+				with self.subTest(oracle1=oracle1, oracle2=oracle2, test_case=test_case,
+						value1=value1, value2=value2):
+					self.assertTrue(abs(value1 - value2) < TOLERANCE)
+			for test_case in BINDING_AFFINITY_TEST_SET:
+				value1 = oracle1.binding_affinity(*test_case)
+				value2 = oracle2.binding_affinity(*test_case)
+				with self.subTest(oracle1=oracle1, oracle2=oracle2, test_case=test_case,
+						value1=value1, value2=value2):	
+					self.assertTrue(abs(value1 - value2) < TOLERANCE)
 
 class SequenceIteratorChecks(unittest.TestCase):
 	def __init__(self, *args):
