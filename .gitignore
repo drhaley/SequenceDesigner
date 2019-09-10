@@ -11,3 +11,6 @@ __run__.py
 
 #don't put user-specific settings on the repo
 user_settings.py
+
+#don't include oracle results file
+*.ps

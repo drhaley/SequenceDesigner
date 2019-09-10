@@ -4,6 +4,13 @@
 #this is a python project, designed to be compatible with 3.6+
 language: python
 
+#so as to avoid compiling nupack and viennaRNA every time,
+# we use a cache
+cache:
+  directories:
+    - $NUPACK_VERSION
+    - ViennaRNA-$VIENNA_VERSION
+
 #this next block could in theory be expanded to include more
 # operating systems, if they were supported
 matrix:
@@ -20,17 +27,38 @@ install:
   - pip install numpy
 
   #install nupack
-  - wget --user $NUPACK_USERNAME --password $NUPACK_PASSWORD http://www.nupack.org/downloads/serve_file/$NUPACK_VERSION.tar.gz
-  - tar xvzf $NUPACK_VERSION.tar.gz
-  - export NUPACKHOME=$PWD/$NUPACK_VERSION
-  - mkdir $NUPACK_VERSION/build
+  - "if [ ! -d $NUPACK_VERSION/build ]; then \
+      wget --user $NUPACK_USERNAME --password $NUPACK_PASSWORD \
+        http://www.nupack.org/downloads/serve_file/$NUPACK_VERSION.tar.gz; \
+      tar xvzf $NUPACK_VERSION.tar.gz; \  
+      export NUPACKHOME=$TRAVIS_BUILD_DIR/$NUPACK_VERSION; \
+      mkdir $NUPACK_VERSION/build; \
+      cd $NUPACK_VERSION/build; \
+      cmake -DCMAKE_INSTALL_PREFIX=$TRAVIS_BUILD_DIR/nupack ../; \
+      make; \
+      cd $TRAVIS_BUILD_DIR; \
+    fi"
   - cd $NUPACK_VERSION/build
-  - cmake -DCMAKE_INSTALL_PREFIX=$PWD/../../nupack ../
-  - make
   - make install
-  - cd ../..
-  - export NUPACKINSTALL=$PWD/nupack
+  - cd $TRAVIS_BUILD_DIR
+  - export NUPACKINSTALL=$TRAVIS_BUILD_DIR/nupack
   - export PATH=$PATH:$NUPACKINSTALL/bin
+
+  #install viennaRNA
+  - "if [ ! -d ViennaRNA-$VIENNA_VERSION/vienna_install ]; then \
+      wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_4_x/ViennaRNA-$VIENNA_VERSION.tar.gz; \
+      tar -zxvf ViennaRNA-$VIENNA_VERSION.tar.gz; \
+      cd ViennaRNA-$VIENNA_VERSION; \
+      ./configure --prefix=$TRAVIS_BUILD_DIR/vienna_install; \
+      make; \
+      cd $TRAVIS_BUILD_DIR; \
+    fi"
+  - cd ViennaRNA-$VIENNA_VERSION
+  - make install
+  - cd $TRAVIS_BUILD_DIR
+  - export PATH=$PATH:$TRAVIS_BUILD_DIR/ViennaRNA-$VIENNA_VERSION/vienna_install/bin
+  - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/ViennaRNA-$VIENNA_VERSION/interfaces/Python3
+      
 
 # command to run tests
 script:
