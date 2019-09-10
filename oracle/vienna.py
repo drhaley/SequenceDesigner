@@ -14,12 +14,12 @@ from oracle.abstract import AbstractOracle
 DEFAULT_PARAMS_FILE = "lib/dna_mathews2004.par"
 
 class Oracle(AbstractOracle):
-    def __init__(self, *args,
-            use_duplex=True, use_subprocess=False, params_filename=DEFAULT_PARAMS_FILE):
+    def __init__(self, *args, 
+            use_duplex=True, use_subprocess=False, params_filename=DEFAULT_PARAMS_FILE, **kargs):
         self._use_duplex = use_duplex
         self._use_subprocess = use_subprocess
         self._params_filename = params_filename
-        super().__init__(*args)
+        super().__init__(*args, **kargs)
         RNA.cvar.noGU = True      #legacy code did not allow GU pairs
 
     def set_temperature(self, temperature):
