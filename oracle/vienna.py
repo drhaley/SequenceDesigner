@@ -47,7 +47,7 @@ class Oracle(AbstractOracle):
     # below this line, code is only relevant to the oracle with "use_subprocess" enabled
     ################################################################################
 
-    _VIENNA_QUIT_STRING = "@\n"
+    _VIENNA_QUIT_STRING = "\n@\n"
     _IGNORED_ERRORS = [
         'WARNING: stacking enthalpies not symmetric',
     ]

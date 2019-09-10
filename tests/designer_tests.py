@@ -95,7 +95,7 @@ class OracleTests(unittest.TestCase):
 				self.assertTrue(weak_binding_energy >= 0.0)
 
 	def test_equivalent_oracles(self):
-		TOLERANCE = 0.50  #TODO: Why is Vienna not agreeing strongly with itself!?!
+		TOLERANCE = 0.01
 
 		SELF_AFFINITY_TEST_SET = [
 			"AAAATTTTTCCCCCGGGGGGG",
