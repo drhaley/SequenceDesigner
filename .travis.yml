@@ -45,7 +45,7 @@ install:
   - export PATH=$PATH:$NUPACKINSTALL/bin
 
   #install viennaRNA
-  - "if [ ! -d ViennaRNA-$VIENNA_VERSION/vienna_install ]; then \
+  - "if [ ! -d $TRAVIS_BUILD_DIR/vienna_install ]; then \
       wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_4_x/ViennaRNA-$VIENNA_VERSION.tar.gz; \
       tar -zxvf ViennaRNA-$VIENNA_VERSION.tar.gz; \
       cd ViennaRNA-$VIENNA_VERSION; \
@@ -56,7 +56,7 @@ install:
   - cd ViennaRNA-$VIENNA_VERSION
   - make install
   - cd $TRAVIS_BUILD_DIR
-  - export PATH=$PATH:$TRAVIS_BUILD_DIR/ViennaRNA-$VIENNA_VERSION/vienna_install/bin
+  - export PATH=$PATH:$TRAVIS_BUILD_DIR/vienna_install/bin
   - export PYTHONPATH=$PYTHONPATH:$TRAVIS_BUILD_DIR/ViennaRNA-$VIENNA_VERSION/interfaces/Python3
       
 
