@@ -28,7 +28,7 @@ install:
   - pip install numpy
 
   #install nupack
-  - "if [ ! -d nupack$NUPACK_VERSION/build ]; then \
+  - "if [ ! -d $TRAVIS_BUILD_DIR/nupack/bin ]; then \
       wget --user $NUPACK_USERNAME --password $NUPACK_PASSWORD \
         http://www.nupack.org/downloads/serve_file/nupack$NUPACK_VERSION.tar.gz; \
       tar xvzf nupack$NUPACK_VERSION.tar.gz; \  
@@ -46,7 +46,7 @@ install:
   - export PATH=$PATH:$NUPACKINSTALL/bin
 
   #install viennaRNA
-  - "if [ ! -d $TRAVIS_BUILD_DIR/vienna_install ]; then \
+  - "if [ ! -d $TRAVIS_BUILD_DIR/vienna_install/bin ]; then \
       wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_4_x/ViennaRNA-$VIENNA_VERSION.tar.gz; \
       tar -zxvf ViennaRNA-$VIENNA_VERSION.tar.gz; \
       cd ViennaRNA-$VIENNA_VERSION; \
