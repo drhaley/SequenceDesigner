@@ -31,6 +31,8 @@ class AbstractSequenceIterator(abc.ABC):
         self._domain_length = domain_length
         self._forbidden_substrings = forbidden_substrings
         self._max_G = max_G
+        if max_G == 0:
+            self._alphabet = self._alphabet.replace("G", "")
 
     def __iter__(self):
         return self
