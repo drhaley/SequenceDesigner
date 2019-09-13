@@ -21,13 +21,12 @@ class AbstractSequenceIterator(abc.ABC):
     
     _MAX_ATTEMPTS_BEFORE_WARNING = 1000
 
-    def __init__(self, *args,
+    def __init__(self,
             domain_length = DEFAULT_DOMAIN_LENGTH,
             alphabet = "ATCG",
             forbidden_substrings = [],    #accepts regular expressions, e.g. (r"^AA", r"[AT]{5}")
             max_G = float("inf"),         #maximum number of Gs in the unstarred strands
         ):
-        super().__init__(*args)
         self._alphabet = alphabet
         self._domain_length = domain_length
         self._forbidden_substrings = forbidden_substrings

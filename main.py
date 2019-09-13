@@ -23,7 +23,19 @@ def main():
 	TEMPERATURE = 40.0
 
 	oracle = oracle_lib.Oracle(TEMPERATURE)
-	sequence_iterator = sequence_iterator_lib.SequenceIterator(domain_length=13)
+
+	sequence_iterator = sequence_iterator_lib.SequenceIterator(
+		domain_length = 13,
+		max_G = 1,
+		forbidden_substrings = [
+			r"[CG]{4}",
+			r"[AT]{5}",
+			r"^[AT]{3}",
+			r"[AT]{3}$",
+			r"AAAA",
+			r"TTTT",
+		]
+	)
 
 	#TODO: load "found sequences" from file, if any
 
@@ -33,7 +45,8 @@ def main():
 		if(True):	#TODO: kick the new sequence if it has poor energetic interactions
 			#TODO: add the new sequence
 			#TODO: update "found sequences" in the relevant file
-			raise NotImplementedError()
+			print(sequence)
+			break
 
 		#TODO: give feedback to the user about the ongoing process
 	
