@@ -3,6 +3,9 @@ import unittest
 import os
 import abc
 import importlib
+import re
+
+import util.common as common
 
 #add the project dir to the python path
 import sys
@@ -12,11 +15,6 @@ sys.path.append(
 		os.path.join(os.path.dirname(__file__),"..")
 	)
 )
-
-###############################################
-#choose which sequence iterator to use here.
-import sequence_iterator.exhaustive as sequence_iterator_lib
-###############################################
 	
 class OracleTests(unittest.TestCase):
 	_TEMPERATURE = 40.0
@@ -112,24 +110,71 @@ class OracleTests(unittest.TestCase):
 
 class SequenceIteratorChecks(unittest.TestCase):
 	_DOMAIN_LENGTH = 10
+	_NUMBER_OF_GRABS = 100
+	_FORBIDDEN_STRINGS = [r"$A", r"A^", r"[CG]{self._DOMAIN_LENGTH/2}"]		
 
 	def __init__(self, *args):
 		super().__init__(*args)
 
 		self._iterator_list = []
+		self._iterator_library_list = []
 		for iterator_name in iterator_names():
 			iterator_library = import_iterator_by_name(iterator_name)
 			self._iterator_list.append(
 				iterator_library.SequenceIterator(domain_length=self._DOMAIN_LENGTH)
 			)
+			self._iterator_library_list.append(iterator_library)
 
-	def test_grab_many_sequences(self):
-		for iterator in self._iterator_list:
+	def test_sequence_length(self):
+		for domain_length in range(1, 1+self._DOMAIN_LENGTH):
+			for iterator_library in self._iterator_library_list:
+				iterator = iterator_library.SequenceIterator(domain_length = domain_length)
+				with self.subTest(iterator = iterator, domain_length = domain_length):
+					self.assertEqual(
+						len(next(iterator)),
+						domain_length
+					)
+				
+	def test_alphabet(self):
+		for char_list in common.powerset(list("ATCG")):
+			alphabet = ''.join(char_list)
+			if alphabet:
+				for iterator_library in self._iterator_library_list:
+					iterator = iterator_library.SequenceIterator(
+								domain_length = self._DOMAIN_LENGTH,
+								alphabet = alphabet)
+					with self.subTest(iterator = iterator, alphabet = alphabet):
+						total_grabs = self._NUMBER_OF_GRABS if len(alphabet) > 1 else 1
+						for _ in range(total_grabs):
+							sequence = next(iterator)
+							self.assertEqual(
+								"", 
+								re.sub(f"[{alphabet}]","", sequence)
+							)
+
+	def test_forbidden_strings(self):
+		for iterator_library in self._iterator_library_list:
+			iterator = iterator_library.SequenceIterator(
+				domain_length = self._DOMAIN_LENGTH,
+				forbidden_substrings = self._FORBIDDEN_STRINGS
+			)
 			with self.subTest(iterator = iterator):
-				NUMBER_OF_GRABS = 100
-				for _ in range(NUMBER_OF_GRABS):
-					_ = next(iterator)
-			
+				for _ in range(self._NUMBER_OF_GRABS):
+					sequence = next(iterator)
+					for forbidden_string in self._FORBIDDEN_STRINGS:
+						self.assertTrue(
+							re.search(forbidden_string, sequence) is None
+						)
+
+	def test_works_as_iterator(self):
+		for iterator_library in self._iterator_library_list:
+			iterator = iterator_library.SequenceIterator()
+			with self.subTest(iterator = iterator):
+				grabs = 0
+				for _ in iterator:
+					grabs += 1
+					if grabs >= self._NUMBER_OF_GRABS:
+						break
 	
 class PythonSyntaxChecks(unittest.TestCase):
 	def test_f_strings(self):
