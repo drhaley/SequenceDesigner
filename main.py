@@ -1,5 +1,4 @@
 import itertools
-import random    #TODO: is this needed in main?
 
 #these imports and the sys.path call are to add the current directory to the python path, so that the latter exports will work
 import sys
@@ -17,28 +16,27 @@ import oracle.vienna as oracle_lib
 import sequence_iterator.random as sequence_iterator_lib
 ###############################################
 
-
-def random_sequence(length, bases=['A','T','C']):
-	return ''.join([
-		random.choice(['A','T','C'])
-		for _ in range(length)
-	])
-
 def main():
+	#TODO: get command-line arguments, if any
+
+	#TODO: get tuning parameters from file, if any
 	TEMPERATURE = 40.0
 
 	oracle = oracle_lib.Oracle(TEMPERATURE)
 	sequence_iterator = sequence_iterator_lib.SequenceIterator(domain_length=13)
 
-	sequences = [
-		next(sequence_iterator)
-		for _ in range(2)
-	]
+	#TODO: load "found sequences" from file, if any
+
+	for sequence in sequence_iterator:
+		#TODO: do relevant comparisons to existing set
+
+		if(True):	#TODO: kick the new sequence if it has poor energetic interactions
+			#TODO: add the new sequence
+			#TODO: update "found sequences" in the relevant file
+			raise NotImplementedError()
+
+		#TODO: give feedback to the user about the ongoing process
 	
-	print(sequences)
-	print(f"self_affinity of first: {oracle.self_affinity(sequences[0])}")
-	print(f"self_affinity of second: {oracle.self_affinity(sequences[1])}")
-	print(f"binding affinity: {oracle.binding_affinity(*sequences)}")
 
 if __name__ == "__main__":
 	main()
