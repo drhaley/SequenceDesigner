@@ -175,6 +175,15 @@ class SequenceIteratorChecks(unittest.TestCase):
 					grabs += 1
 					if grabs >= self._NUMBER_OF_GRABS:
 						break
+
+	def test_max_G(self):
+		for max_G in range(1, 1+self._DOMAIN_LENGTH):
+			for iterator_library in self._iterator_library_list:
+				iterator = iterator_library.SequenceIterator(max_G = max_G)
+				with self.subTest(iterator = iterator, max_G = max_G):
+					for _ in range(self._NUMBER_OF_GRABS):
+						sequence = next(iterator)
+						self.assertTrue(sequence.count("G") <= max_G)
 	
 class PythonSyntaxChecks(unittest.TestCase):
 	def test_f_strings(self):
