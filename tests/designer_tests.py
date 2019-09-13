@@ -4,6 +4,7 @@ import os
 import abc
 import importlib
 import re
+import random
 
 import util.common as common
 
@@ -110,8 +111,20 @@ class OracleTests(unittest.TestCase):
 
 class SequenceIteratorChecks(unittest.TestCase):
 	_DOMAIN_LENGTH = 10
-	_NUMBER_OF_GRABS = 100
-	_FORBIDDEN_STRINGS = [r"$A", r"A^", r"[CG]{self._DOMAIN_LENGTH/2}"]		
+	_NUMBER_OF_GRABS = 20
+	_FORBIDDEN_STRINGS = [r"$A", r"A^", r"[CG]{self._DOMAIN_LENGTH/2}"]
+	_TEST_GENERATORS = [  #as generator, regex_to_test_against, intended_bool_result
+		(lambda: "A"*10,
+			"^A{10}$", True),
+		(lambda: "G"*10,
+			"^G{10}$", True),
+		(lambda: ''.join([random.choice(list("AT")) for _ in range(10)]),
+			r"^[AT]{8}$", False),
+		(lambda: ''.join([random.choice(list("AT")) for _ in range(10)]),
+			r"^[TCG]{10}$", False),
+		(lambda: ''.join([random.choice(list("ATCG")) for _ in range(random.choice([5,6,7]))]),
+			r"^[ATCG]{5}(|[ATCG]{1}|[ATCG]{2})$", True),
+	]
 
 	def __init__(self, *args):
 		super().__init__(*args)
@@ -185,6 +198,19 @@ class SequenceIteratorChecks(unittest.TestCase):
 						sequence = next(iterator)
 						self.assertTrue(sequence.count("G") <= max_G)
 	
+	def test_custom_iterator(self):
+		custom_iterator_library = import_iterator_by_name("custom")
+		for generator, regex_match, intended_test_result in self._TEST_GENERATORS:
+			with self.subTest(regex_match = regex_match):
+				iterator = custom_iterator_library.SequenceIterator(generator = generator)
+				sequences = [next(iterator) for _ in range(self._NUMBER_OF_GRABS)]
+				all_sequences_pass = all([re.match(regex_match, sequence) for sequence in sequences])
+				if intended_test_result == True:
+					self.assertTrue(all_sequences_pass)
+				else:
+					self.assertFalse(all_sequences_pass)
+
+
 class PythonSyntaxChecks(unittest.TestCase):
 	def test_f_strings(self):
 		self.assertEqual(f"{3}", "3")
