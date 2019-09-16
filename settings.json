@@ -1,0 +1,5 @@
+{
+    "temperature": 40.0,
+    "oracle": "vienna",
+    "sequence_iterator": "random"
+}
