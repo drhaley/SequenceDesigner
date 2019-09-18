@@ -16,7 +16,7 @@ class Oracle(AbstractOracle):
         else:
             possible_loopout_positions = range(1,len(sequence)-self.__LOOPOUT_SIZE-1)
             return \
-                min([
+                max([
                     self.binding_affinity(
                         sequence[:loopout_start],
                         sequence[loopout_start+self.__LOOPOUT_SIZE:]
@@ -28,9 +28,9 @@ class Oracle(AbstractOracle):
             sequence1, sequence2):
 
         return \
-            min([
+            max([
                 sum([
-                    self.__base_pair_energy(
+                    self._base_pair_affinity(
                         sequence1[offset1+i],sequence2[-(offset2+i)]
                     )
                     for i in range(
@@ -41,13 +41,13 @@ class Oracle(AbstractOracle):
                 for offset2 in range(len(sequence2))
             ])
 
-    def __base_pair_energy(self,
+    def _base_pair_affinity(self,
             base1, base2):
 
         base_pair = {base1.upper(),base2.upper()}
         if {'A','T'}.issubset(base_pair):
-            return -50.0/self._temperature
+            return 50.0/self._temperature
         elif {'C','G'}.issubset(base_pair):
-            return -200.0/self._temperature
+            return 200.0/self._temperature
         else:
             return 0.0

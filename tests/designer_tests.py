@@ -56,14 +56,14 @@ class OracleTests(unittest.TestCase):
 	def test_hairpin(self):
 		for oracle in self._oracle_list:
 			with self.subTest(oracle = oracle):
-				strong_binding_energy = oracle.self_affinity(
+				strong_binding_affinity = oracle.self_affinity(
 					"GGGGGGGGGGGGGGGGGGGGGGGGGAAATCCCCCCCCCCCCC"
 				)
-				self.assertTrue(strong_binding_energy < 0.0)
-				weak_binding_energy = oracle.self_affinity(
+				self.assertTrue(strong_binding_affinity > 0.0)
+				weak_binding_affinity = oracle.self_affinity(
 					"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
 				)
-				self.assertTrue(weak_binding_energy >= 0.0)
+				self.assertTrue(weak_binding_affinity <= 0.0)
 
 	def test_binding(self):
 		for oracle in self._oracle_list:
@@ -72,11 +72,11 @@ class OracleTests(unittest.TestCase):
 				polyG = "GGGGGGGGGGGGGGG"
 				almost_polyC = "CCCCCCCCCCCCCCA"
 
-				strong_binding_energy = oracle.binding_affinity(polyC, polyG)
-				self.assertTrue(strong_binding_energy < 0.0)
+				strong_binding_affinity = oracle.binding_affinity(polyC, polyG)
+				self.assertTrue(strong_binding_affinity > 0.0)
 
-				weak_binding_energy = oracle.binding_affinity(polyC, almost_polyC)
-				self.assertTrue(weak_binding_energy >= 0.0)
+				weak_binding_affinity = oracle.binding_affinity(polyC, almost_polyC)
+				self.assertTrue(weak_binding_affinity <= 0.0)
 
 	def test_equivalent_oracles(self):
 		TOLERANCE = 0.01
@@ -197,7 +197,7 @@ class SequenceIteratorChecks(unittest.TestCase):
 					for _ in range(self._NUMBER_OF_GRABS):
 						sequence = next(iterator)
 						self.assertTrue(sequence.count("G") <= max_G)
-	
+            
 	def test_custom_iterator(self):
 		custom_iterator_library = import_iterator_by_name("custom")
 		for generator, regex_match, intended_test_result in self._TEST_GENERATORS:
@@ -209,6 +209,44 @@ class SequenceIteratorChecks(unittest.TestCase):
 					self.assertTrue(all_sequences_pass)
 				else:
 					self.assertFalse(all_sequences_pass)
+
+
+class UtilTests(unittest.TestCase):
+	def test_wc(self):
+		TEST_CASES = [
+			("AATT", "AATT"),
+			("ATCG", "CGAT"),
+			("ACTG", "CAGT"),
+			("AAAAA", "TTTTT"),
+			("TTTTT", "AAAAA"),
+			("CCCCC", "GGGGG"),
+			("GGGGG", "CCCCC"),
+		]
+		for sequence, wc_sequence in TEST_CASES:
+			self.assertEqual(
+				common.wc(sequence),
+				wc_sequence
+			)
+
+	def test_product_strings(self):
+		self.assertEqual(
+			set(common.product_strings(1, "AT")),
+			set(["A", "T"])
+		)
+		self.assertEqual(
+			set(common.product_strings(2, "AT")),
+			set(["AA", "AT", "TA", "TT"])
+		)
+
+	def test_powerset(self):
+		self.assertEqual(
+			list(common.powerset([0])),
+			[(), (0,)]
+		)
+		self.assertEqual(
+			list(common.powerset([0,1])),
+			[(), (0,), (1,), (0,1)]
+		)
 
 
 class PythonSyntaxChecks(unittest.TestCase):
