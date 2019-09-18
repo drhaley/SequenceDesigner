@@ -11,6 +11,14 @@ import sys
 import os
 sys.path.append(os.getcwd())
 
+#TODO: connect verbosity and max_considered to command-line arguments or to the parameter file
+VERBOSE = False
+MAX_SEQUENCES_CONSIDERED = 1000
+
+#TODO: factor out tuning parameters to a separate file and accept them as arguments in related functions
+MIN_AFFINITY_TO_SELF = 12.0  # TODO: tune
+MAX_AFFINITY_TO_OTHER_SINGLE = 6.0  # TODO: tune
+MAX_AFFINITY_TO_OTHER_PAIR = 6.0  # TODO: tune
 
 def main():
 	command_line_parameters = process_command_line_args()
@@ -25,7 +33,6 @@ def main():
 	
 	#the settings from the file can be overriden by the command line arguments
 	runtime_parameters.update(command_line_parameters)
-	
 
 	oracle_name = runtime_parameters[ORACLE]
 	oracle_lib = importlib.import_module(f"oracle.{oracle_name}")
@@ -52,19 +59,20 @@ def main():
 	found_sequences = []
 	
 	for count, sequence in enumerate(sequence_iterator):
-		accept, fitness = consider(sequence, found_sequences, oracle)
-		
+		accept, fitness = consider(sequence, found_sequences, oracle, verbose = VERBOSE)
+
 		if(accept):
 			found_sequences.append(sequence)
+			print(f"Accepted {sequence}")
 			#TODO: update "found sequences" in the relevant file
 		else:
 			sequence_iterator.feedback(fitness)
-		
-		#give feedback to the user about the ongoing process
-		print(sequence)
-		print(f"{oracle_name}: {oracle.self_affinity(sequence)}")
+			if VERBOSE: print(f"Rejected {sequence}")
 
-		if (count > 10): break   #TODO: don't break
+		#TODO: give feedback to the user about the ongoing process
+
+		if (count >= MAX_SEQUENCES_CONSIDERED): break   #TODO: don't break
+
 
 def process_command_line_args():
 	parser = argparse.ArgumentParser()
@@ -115,19 +123,54 @@ def process_command_line_args():
 	return scrubbed_parameters
 
 
-def consider(sequence, found_sequences, oracle):
-	#TODO: factor out to a separate file and accept the tuning parameters as arguments
-	MIN_AFFINITY_TO_SELF = 6.0   #TODO: tune
-	MAX_AFFINITY_TO_OTHER_SINGLE = 4.0   #TODO: tune
-	MAX_AFFINITY_TO_OTHER_PAIR = 4.0   #TODO: tune
+def consider(sequence, found_sequences, oracle, verbose = False):
+	affinity_to_self = oracle.binding_affinity(sequence, common.wc(sequence))
+	sticky_to_itself = affinity_to_self >= MIN_AFFINITY_TO_SELF
+	if verbose: print(f"self affinity: {affinity_to_self}");
 
-	sticky_to_itself = oracle.binding_affinity(sequence, common.wc(sequence)) >= MIN_AFFINITY_TO_SELF
-	#not sticky to other things()
-	#starred version not sticky when next to another unstarred()
-	#unstarred version not sticky to another pair of unstarred()
-	
-	accept = sticky_to_itself #TODO
-	fitness = 100 #TODO
+	affinity_to_other_singles = [
+		oracle.binding_affinity(seq1, seq2)
+		for found_sequence in found_sequences
+		for seq1 in [sequence, common.wc(sequence)]
+		for seq2 in [found_sequence, common.wc(found_sequence)]
+	]
+	not_sticky_to_other_singles = all([
+		affinity <= MAX_AFFINITY_TO_OTHER_SINGLE
+		for affinity in affinity_to_other_singles
+	])
+	if verbose and found_sequences: print(f"max affinity to other singles: {max(affinity_to_other_singles)}");
+
+	affinity_to_other_pairs = [
+		oracle.binding_affinity(joined_sequence, common.wc(sequence))
+		for joined_sequence in [seq1 + seq2 for seq1 in found_sequences for seq2 in found_sequences]
+	]
+	not_sticky_to_other_pairs = all([
+		affinity <= MAX_AFFINITY_TO_OTHER_PAIR
+		for affinity in affinity_to_other_pairs
+	])
+	if verbose and found_sequences:	print(f"max affinity to other pairs: {max(affinity_to_other_singles)}");
+
+	mid_domain_affinities = [
+		oracle.binding_affinity(joined_sequence, starred_domain)
+		for adjacent_domain in found_sequences + [sequence]
+		for starred_domain in found_sequences
+		for joined_sequence in [adjacent_domain + sequence, sequence + adjacent_domain]
+		if adjacent_domain != starred_domain
+	]
+	not_sticky_when_with_adjacent_domain = all([
+		affinity <= MAX_AFFINITY_TO_OTHER_PAIR
+		for affinity in mid_domain_affinities
+	])
+	if verbose and found_sequences:	print(f"max mid-domain affinity: {max(mid_domain_affinities)}");
+
+
+	accept = \
+		sticky_to_itself and \
+		not_sticky_to_other_singles and \
+		not_sticky_to_other_pairs and \
+		not_sticky_when_with_adjacent_domain
+
+	fitness = 100 #TODO: implement and document fitness value
 
 	return accept, fitness
 
