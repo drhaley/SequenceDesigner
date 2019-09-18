@@ -32,7 +32,7 @@ class Oracle(AbstractOracle):
             minimum_free_energy = self._subprocess_self_affinity(sequence)
         else:
             _, minimum_free_energy = RNA.fold(sequence)
-        return minimum_free_energy
+        return -minimum_free_energy
 
     def binding_affinity(self, sequence1, sequence2):
         if self._use_subprocess:
@@ -41,7 +41,7 @@ class Oracle(AbstractOracle):
             minimum_free_energy = RNA.duplexfold(sequence1, sequence2).energy
         else:
             _, minimum_free_energy = RNA.cofold('&'.join([sequence1, sequence2]))
-        return minimum_free_energy
+        return -minimum_free_energy
 
     ################################################################################
     # below this line, code is only relevant to the oracle with "use_subprocess" enabled

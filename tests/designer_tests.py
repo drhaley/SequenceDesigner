@@ -55,14 +55,14 @@ class OracleTests(unittest.TestCase):
 	def test_hairpin(self):
 		for oracle in self._oracle_list:
 			with self.subTest(oracle = oracle):
-				strong_binding_energy = oracle.self_affinity(
+				strong_binding_affinity = oracle.self_affinity(
 					"GGGGGGGGGGGGGGGGGGGGGGGGGAAATCCCCCCCCCCCCC"
 				)
-				self.assertTrue(strong_binding_energy < 0.0)
-				weak_binding_energy = oracle.self_affinity(
+				self.assertTrue(strong_binding_affinity > 0.0)
+				weak_binding_affinity = oracle.self_affinity(
 					"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
 				)
-				self.assertTrue(weak_binding_energy >= 0.0)
+				self.assertTrue(weak_binding_affinity <= 0.0)
 
 	def test_binding(self):
 		for oracle in self._oracle_list:
@@ -71,11 +71,11 @@ class OracleTests(unittest.TestCase):
 				polyG = "GGGGGGGGGGGGGGG"
 				almost_polyC = "CCCCCCCCCCCCCCA"
 
-				strong_binding_energy = oracle.binding_affinity(polyC, polyG)
-				self.assertTrue(strong_binding_energy < 0.0)
+				strong_binding_affinity = oracle.binding_affinity(polyC, polyG)
+				self.assertTrue(strong_binding_affinity > 0.0)
 
-				weak_binding_energy = oracle.binding_affinity(polyC, almost_polyC)
-				self.assertTrue(weak_binding_energy >= 0.0)
+				weak_binding_affinity = oracle.binding_affinity(polyC, almost_polyC)
+				self.assertTrue(weak_binding_affinity <= 0.0)
 
 	def test_equivalent_oracles(self):
 		TOLERANCE = 0.01

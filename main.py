@@ -4,7 +4,8 @@ import importlib
 import json
 from util.constants import *
 
-#these imports and the sys.path call are to add the current directory to the python path, so that the latter exports will work
+#these imports and the sys.path call are to add the current directory to the python path,
+# so that the latter exports will work
 import sys
 import os
 sys.path.append(os.getcwd())
@@ -49,8 +50,16 @@ def main():
 	#TODO: load "found sequences" from file, if any
 	found_sequences = []
 
+	MIN_AFFINITY_TO_SELF = 6.0   #TODO: tune
+	MAX_AFFINITY_TO_OTHER_SINGLE = 4.0   #TODO: tune
+	MAX_AFFINITY_TO_OTHER_PAIR = 4.0   #TODO: tune
+	
 	for count, sequence in enumerate(sequence_iterator):
 		#TODO: do relevant comparisons to existing set
+		#sticky to itself()
+		#not sticky to other things()
+		#starred version not sticky when next to another unstarred()
+		#unstarred version not sticky to another pair of unstarred()
 
 		if(True):	#TODO: kick the new sequence if it has poor energetic interactions
 			found_sequences.append(sequence)

@@ -6,10 +6,10 @@ from oracle.abstract import AbstractOracle
 
 class Oracle(AbstractOracle):
     def self_affinity(self, sequence):
-        return self._pfunc(sequence)
+        return -self._pfunc(sequence)
 
     def binding_affinity(self, sequence1, sequence2):
-        return self._pfunc(sequence1,sequence2)
+        return -self._pfunc(sequence1,sequence2)
 
     _R = 0.0019872041 # Boltzmann's constant in kcal/mol/K
     
