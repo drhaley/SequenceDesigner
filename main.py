@@ -2,18 +2,12 @@ import itertools
 import argparse
 import importlib
 import json
+from util.constants import *
 
 #these imports and the sys.path call are to add the current directory to the python path, so that the latter exports will work
 import sys
 import os
 sys.path.append(os.getcwd())
-
-
-#TODO: factor out keys to constants.py
-SETTINGS_FILENAME = "settings_file"
-TEMPERATURE = "temperature"
-ORACLE = "oracle"
-SEQUENCE_ITERATOR = "sequence_iterator"
 
 
 def main():
