@@ -185,6 +185,44 @@ class SequenceIteratorChecks(unittest.TestCase):
 						sequence = next(iterator)
 						self.assertTrue(sequence.count("G") <= max_G)
 	
+class UtilTests(unittest.TestCase):
+	def test_wc(self):
+		TEST_CASES = [
+			("AATT", "AATT"),
+			("ATCG", "CGAT"),
+			("ACTG", "CAGT"),
+			("AAAAA", "TTTTT"),
+			("TTTTT", "AAAAA"),
+			("CCCCC", "GGGGG"),
+			("GGGGG", "CCCCC"),
+		]
+		for sequence, wc_sequence in TEST_CASES:
+			self.assertEqual(
+				common.wc(sequence),
+				wc_sequence
+			)
+
+	def test_product_strings(self):
+		self.assertEqual(
+			set(common.product_strings(1, "AT")),
+			set(["A", "T"])
+		)
+		self.assertEqual(
+			set(common.product_strings(2, "AT")),
+			set(["AA", "AT", "TA", "TT"])
+		)
+
+	def test_powerset(self):
+		self.assertEqual(
+			list(common.powerset([0])),
+			[(), (0,)]
+		)
+		self.assertEqual(
+			list(common.powerset([0,1])),
+			[(), (0,), (1,), (0,1)]
+		)
+
+
 class PythonSyntaxChecks(unittest.TestCase):
 	def test_f_strings(self):
 		self.assertEqual(f"{3}", "3")

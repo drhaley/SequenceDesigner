@@ -3,6 +3,7 @@ import argparse
 import importlib
 import json
 from util.constants import *
+import util.common as common
 
 #these imports and the sys.path call are to add the current directory to the python path,
 # so that the latter exports will work
@@ -49,21 +50,15 @@ def main():
 
 	#TODO: load "found sequences" from file, if any
 	found_sequences = []
-
-	MIN_AFFINITY_TO_SELF = 6.0   #TODO: tune
-	MAX_AFFINITY_TO_OTHER_SINGLE = 4.0   #TODO: tune
-	MAX_AFFINITY_TO_OTHER_PAIR = 4.0   #TODO: tune
 	
 	for count, sequence in enumerate(sequence_iterator):
-		#TODO: do relevant comparisons to existing set
-		#sticky to itself()
-		#not sticky to other things()
-		#starred version not sticky when next to another unstarred()
-		#unstarred version not sticky to another pair of unstarred()
-
-		if(True):	#TODO: kick the new sequence if it has poor energetic interactions
+		accept, fitness = consider(sequence, found_sequences, oracle)
+		
+		if(accept):
 			found_sequences.append(sequence)
 			#TODO: update "found sequences" in the relevant file
+		else:
+			sequence_iterator.feedback(fitness)
 		
 		#give feedback to the user about the ongoing process
 		print(sequence)
@@ -119,6 +114,22 @@ def process_command_line_args():
 	}
 	return scrubbed_parameters
 
+
+def consider(sequence, found_sequences, oracle):
+	#TODO: factor out to a separate file and accept the tuning parameters as arguments
+	MIN_AFFINITY_TO_SELF = 6.0   #TODO: tune
+	MAX_AFFINITY_TO_OTHER_SINGLE = 4.0   #TODO: tune
+	MAX_AFFINITY_TO_OTHER_PAIR = 4.0   #TODO: tune
+
+	sticky_to_itself = oracle.binding_affinity(sequence, common.wc(sequence)) >= MIN_AFFINITY_TO_SELF
+	#not sticky to other things()
+	#starred version not sticky when next to another unstarred()
+	#unstarred version not sticky to another pair of unstarred()
+	
+	accept = sticky_to_itself #TODO
+	fitness = 100 #TODO
+
+	return accept, fitness
 
 if __name__ == "__main__":
 	main()
