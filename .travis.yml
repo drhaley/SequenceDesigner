@@ -19,12 +19,16 @@ matrix:
     - name: "Python 3.7 on Xenial Linux"
       python: 3.7
       dist: xenial
-      env: PYTHON_EXECUTABLE=python
+      env:
+        - PYTHON_EXECUTABLE=python
+        - CACHE_NAME=linux
     - name: "Python 3.7 on macOS"
       os: osx
       python: 3.7
       language: shell  #'language: python' breaks on Travis CI macOSX
-      env: PYTHON_EXECUTABLE=python3
+      env:
+        - PYTHON_EXECUTABLE=python3
+        - CACHE_NAME=osx
           
 #dependencies need to be installed now
 install:

@@ -149,10 +149,10 @@ def consider(sequence, found_sequences, oracle, verbose = False):
 		affinity <= MAX_AFFINITY_TO_OTHER_PAIR
 		for affinity in affinity_to_other_pairs
 	])
-	if verbose and found_sequences:	print(f"\tmax affinity to other pairs: {max(affinity_to_other_singles)}");
+	if verbose and found_sequences:	print(f"\tmax affinity to other pairs: {max(affinity_to_other_pairs)}");
 
 	mid_domain_affinities = [
-		oracle.binding_affinity(joined_sequence, starred_domain)
+		oracle.binding_affinity(joined_sequence, common.wc(starred_domain))
 		for adjacent_domain in found_sequences + [sequence]
 		for starred_domain in found_sequences
 		for joined_sequence in [adjacent_domain + sequence, sequence + adjacent_domain]
