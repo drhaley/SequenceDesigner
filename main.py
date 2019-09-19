@@ -12,8 +12,8 @@ import os
 sys.path.append(os.getcwd())
 
 #TODO: connect verbosity and max_considered to command-line arguments or to the parameter file
-VERBOSE = False
-MAX_SEQUENCES_CONSIDERED = 1000
+VERBOSE = True
+MAX_SEQUENCES_CONSIDERED = 100
 
 #TODO: factor out tuning parameters to a separate file and accept them as arguments in related functions
 MIN_AFFINITY_TO_SELF = 12.0  # TODO: tune
@@ -59,6 +59,7 @@ def main():
 	found_sequences = []
 	
 	for count, sequence in enumerate(sequence_iterator):
+		if VERBOSE: print() #newline
 		accept, fitness = consider(sequence, found_sequences, oracle, verbose = VERBOSE)
 
 		if(accept):
@@ -126,7 +127,7 @@ def process_command_line_args():
 def consider(sequence, found_sequences, oracle, verbose = False):
 	affinity_to_self = oracle.binding_affinity(sequence, common.wc(sequence))
 	sticky_to_itself = affinity_to_self >= MIN_AFFINITY_TO_SELF
-	if verbose: print(f"self affinity: {affinity_to_self}");
+	if verbose: print(f"\tself affinity: {affinity_to_self}");
 
 	affinity_to_other_singles = [
 		oracle.binding_affinity(seq1, seq2)
@@ -138,7 +139,7 @@ def consider(sequence, found_sequences, oracle, verbose = False):
 		affinity <= MAX_AFFINITY_TO_OTHER_SINGLE
 		for affinity in affinity_to_other_singles
 	])
-	if verbose and found_sequences: print(f"max affinity to other singles: {max(affinity_to_other_singles)}");
+	if verbose and found_sequences: print(f"\tmax affinity to other singles: {max(affinity_to_other_singles)}");
 
 	affinity_to_other_pairs = [
 		oracle.binding_affinity(joined_sequence, common.wc(sequence))
@@ -148,7 +149,7 @@ def consider(sequence, found_sequences, oracle, verbose = False):
 		affinity <= MAX_AFFINITY_TO_OTHER_PAIR
 		for affinity in affinity_to_other_pairs
 	])
-	if verbose and found_sequences:	print(f"max affinity to other pairs: {max(affinity_to_other_singles)}");
+	if verbose and found_sequences:	print(f"\tmax affinity to other pairs: {max(affinity_to_other_singles)}");
 
 	mid_domain_affinities = [
 		oracle.binding_affinity(joined_sequence, starred_domain)
@@ -161,7 +162,7 @@ def consider(sequence, found_sequences, oracle, verbose = False):
 		affinity <= MAX_AFFINITY_TO_OTHER_PAIR
 		for affinity in mid_domain_affinities
 	])
-	if verbose and found_sequences:	print(f"max mid-domain affinity: {max(mid_domain_affinities)}");
+	if verbose and found_sequences:	print(f"\tmax mid-domain affinity: {max(mid_domain_affinities)}");
 
 
 	accept = \
