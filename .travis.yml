@@ -17,8 +17,9 @@ cache:
 matrix:
   include:
     - name: "Python 3.7 on Xenial Linux"
-      python: 3.7
+      os: linux
       dist: xenial
+      python: 3.7
       env:
         - PYTHON_EXECUTABLE=python
         - CACHE_NAME=linux
