@@ -109,7 +109,7 @@ class OracleTests(unittest.TestCase):
 						value1=value1, value2=value2):	
 					self.assertTrue(abs(value1 - value2) < TOLERANCE)
 
-class SequenceIteratorChecks(unittest.TestCase):
+class SequenceIteratorTests(unittest.TestCase):
 	_DOMAIN_LENGTH = 10
 	_NUMBER_OF_GRABS = 20
 	_FORBIDDEN_STRINGS = [r"$A", r"A^", r"[CG]{self._DOMAIN_LENGTH/2}"]
@@ -211,6 +211,73 @@ class SequenceIteratorChecks(unittest.TestCase):
 					self.assertFalse(all_sequences_pass)
 
 
+class ArbiterTests(unittest.TestCase):
+	_TEMPERATURE = 40.0
+
+	def __init__(self, *args):
+		super().__init__(*args)
+
+		self._oracle = import_oracle_by_name('vienna').Oracle(self._TEMPERATURE)
+
+		self._arbiter_list = []
+		self._arbiter_library_list = []
+		for arbiter_name in arbiter_names():
+			arbiter_library = import_arbiter_by_name(arbiter_name)
+			self._arbiter_list.append(
+				arbiter_library.Arbiter(oracle = self._oracle)
+			)
+			self._arbiter_library_list.append(arbiter_library)
+
+	def test_oracle_exists_assertion(self):
+		for arbiter_library in self._arbiter_library_list:
+			with self.subTest(arbiter_library = arbiter_library):
+				with self.assertRaises(AssertionError):
+					arbiter_library.Arbiter()  #no oracle provided
+
+	def test_initial_sequences_are_accepted(self):
+		TEST_LIST = common.product_strings(3, "ATCG")
+		for arbiter_library in self._arbiter_library_list:
+			with self.subTest(arbiter_library = arbiter_library):
+				arbiter = arbiter_library.Arbiter(
+					oracle = self._oracle,
+					initial_sequences = TEST_LIST
+				)
+				self.assertEqual(TEST_LIST, arbiter.get_sequences())
+
+	def test_save_to_file(self):
+		#TODO
+		pass
+
+	def test_fitness(self):
+		#TODO
+		pass
+
+	def test_consider(self):
+		#Test to be sure that the functions listed in _conditions_to_check() actually exist
+		#TODO
+		pass
+
+	def test_sticky_to_itself(self):
+		#test self._sticky_to_itself()
+		#TODO
+		pass
+
+	def test_not_sticky_to_others(self):
+		#test self._not_sticky_to_others()
+		#TODO
+		pass
+
+	def test_not_sticky_to_itself(self):
+		#test self._not_sticky_to_pairs()
+		#TODO
+		pass
+	
+	def test_not_sticky_to_adjacent(self):
+		#test self._not_sticky_to_adjacent()
+		#TODO
+		pass			
+
+
 class UtilTests(unittest.TestCase):
 	def test_wc(self):
 		TEST_CASES = [
@@ -249,7 +316,7 @@ class UtilTests(unittest.TestCase):
 		)
 
 
-class PythonSyntaxChecks(unittest.TestCase):
+class PythonSyntaxTests(unittest.TestCase):
 	def test_f_strings(self):
 		self.assertEqual(f"{3}", "3")
 		self.assertNotEqual(f"{4}", "3")
@@ -258,14 +325,20 @@ class PythonSyntaxChecks(unittest.TestCase):
 def import_oracle_by_name(oracle_name):
 	return importlib.import_module(f"oracle.{oracle_name}")
 
-def import_iterator_by_name(oracle_name):
-	return importlib.import_module(f"sequence_iterator.{oracle_name}")
+def import_iterator_by_name(iterator_name):
+	return importlib.import_module(f"sequence_iterator.{iterator_name}")
+
+def import_arbiter_by_name(arbiter_name):
+	return importlib.import_module(f"arbiter.{arbiter_name}")
 
 def oracle_names():
 	return get_py_filename_list("oracle")
 	
 def iterator_names():
 	return get_py_filename_list("sequence_iterator")
+
+def arbiter_names():
+	return get_py_filename_list("arbiter")
 
 def get_py_filename_list(directory):
 	filenames = []
