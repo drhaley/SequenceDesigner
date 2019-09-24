@@ -1,14 +1,18 @@
 import abc   #abstract classes
 
-from util.constants import *
-import util.common as common
+from util.constants import \
+    MAX_FITNESS, \
+    MIN_AFFINITY_TO_SELF, \
+    MAX_AFFINITY_TO_OTHER_SINGLE, \
+    MAX_AFFINITY_TO_OTHER_PAIR
+from util import common
 
 class AbstractArbiter(abc.ABC):
 ###################################################
     @abc.abstractmethod
     def _conditions_to_check(self):
         return [
-            self._sticky_to_itself,
+            self._sticky_to_complement,
             self._not_sticky_to_others,
             self._not_sticky_to_pairs,
             self._not_sticky_with_adjacent,
@@ -48,7 +52,19 @@ class AbstractArbiter(abc.ABC):
 
     def get_sequences(self):
         return self._accepted_sequences
-        
+
+    def load_from_file(self, filename):
+        self._accepted_sequences = []
+        self.append_from_file(filename)
+
+    def append_from_file(self, filename):
+        with open(filename, "r") as inFile:
+            sequence = inFile.readline().strip()
+            while sequence:
+                if sequence not in self._accepted_sequences:
+                    self._accepted_sequences.append(sequence)
+                sequence = inFile.readline().strip()
+                
     def _accept(self, sequence):
         self._accepted_sequences.append(sequence)
         if self._verbose: print(f"Accepted {sequence}")
@@ -61,7 +77,7 @@ class AbstractArbiter(abc.ABC):
         if self._save_filename:
             with open(self._save_filename, "w") as outFile:
                 for accepted_sequence in self._accepted_sequences:
-                    outFile.write(accepted_sequence)
+                    outFile.write(f"{accepted_sequence}\n")
 
     def _proportion_exceeding_target(self, value, target):
         fitness = MAX_FITNESS * (value - target) / target
@@ -73,14 +89,14 @@ class AbstractArbiter(abc.ABC):
         fitness = min(fitness, MAX_FITNESS)
         return fitness
 
-    def _sticky_to_itself(self, sequence):
+    def _sticky_to_complement(self, sequence):
         affinity_to_self = self._oracle.binding_affinity(sequence, common.wc(sequence))
-        sticky_to_itself = affinity_to_self >= MIN_AFFINITY_TO_SELF
+        sticky_to_complement = affinity_to_self >= MIN_AFFINITY_TO_SELF
 
         if self._verbose: print(f"\tself affinity: {affinity_to_self}")
 
         fitness = self._proportion_of_target(affinity_to_self, MIN_AFFINITY_TO_SELF)
-        return sticky_to_itself, fitness
+        return sticky_to_complement, fitness
 
     def _not_sticky_to_others(self, sequence):
         if not self._accepted_sequences:

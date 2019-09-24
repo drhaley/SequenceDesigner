@@ -2,8 +2,15 @@ import itertools
 import argparse
 import importlib
 import json
-from util.constants import *
-import util.common as common
+from util import common
+from util.constants import \
+    SETTINGS_FILENAME, \
+    ORACLE, \
+    TEMPERATURE, \
+    SEQUENCE_ITERATOR, \
+	ARBITER, \
+	VERBOSE, \
+	MAX_SEQUENCES_CONSIDERED
 
 #these imports and the sys.path call are to add the current directory to the python path,
 # so that the latter exports will work

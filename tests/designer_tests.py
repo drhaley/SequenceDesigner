@@ -5,8 +5,8 @@ import abc
 import importlib
 import re
 import random
-
-import util.common as common
+import tempfile
+from util import common
 
 #add the project dir to the python path
 import sys
@@ -16,6 +16,7 @@ sys.path.append(
 		os.path.join(os.path.dirname(__file__),"..")
 	)
 )
+
 	
 class OracleTests(unittest.TestCase):
 	_TEMPERATURE = 40.0
@@ -110,9 +111,9 @@ class OracleTests(unittest.TestCase):
 					self.assertTrue(abs(value1 - value2) < TOLERANCE)
 
 class SequenceIteratorTests(unittest.TestCase):
-	_DOMAIN_LENGTH = 10
+	_DOMAIN_LENGTH = 8
 	_NUMBER_OF_GRABS = 20
-	_FORBIDDEN_STRINGS = [r"$A", r"A^", r"[CG]{self._DOMAIN_LENGTH/2}"]
+	_FORBIDDEN_STRINGS = [r"$A", r"A^", r"[CG]{5}"]
 	_TEST_GENERATORS = [  #as generator, regex_to_test_against, intended_bool_result
 		(lambda: "A"*10,
 			"^A{10}$", True),
@@ -244,21 +245,55 @@ class ArbiterTests(unittest.TestCase):
 				)
 				self.assertEqual(TEST_LIST, arbiter.get_sequences())
 
-	def test_save_to_file(self):
-		#TODO
-		pass
+	def test_file_read_and_write(self):
+		TEST_SEQUENCES = ["ATCG", "AATT"]
+		EXTRA_SEQUENCES = ["AAAA", "AATT"] #intentional overlap with TEST_SEQUENCES
+
+		for arbiter_library in self._arbiter_library_list:
+			with self.subTest(arbiter_library = arbiter_library):
+				_, temporary_filename = tempfile.mkstemp()
+		
+				arbiter = arbiter_library.Arbiter(
+					oracle = self._oracle,
+					initial_sequences = TEST_SEQUENCES,
+					save_filename = temporary_filename
+				)
+
+				arbiter._save()
+
+				loaded_arbiter = arbiter_library.Arbiter(oracle = self._oracle)
+				loaded_arbiter.load_from_file(temporary_filename)
+
+				self.assertEqual(TEST_SEQUENCES, loaded_arbiter.get_sequences())
+
+				appended_arbiter = arbiter_library.Arbiter(
+					oracle = self._oracle,
+					initial_sequences = EXTRA_SEQUENCES
+				)
+				appended_arbiter.append_from_file(temporary_filename)
+
+				self.assertTrue(
+					all([
+						appended_arbiter.get_sequences().count(sequence) == 1
+						for sequence in TEST_SEQUENCES + EXTRA_SEQUENCES
+					])
+				)
+
+	def test_checks_exist(self):
+		#Test to be sure that the functions listed in _conditions_to_check() actually exist
+		for arbiter in self._arbiter_list:
+			for condition in arbiter._conditions_to_check():
+				with self.subTest(arbiter = arbiter, condition = condition):
+					condition("ATCG")
+					with self.assertRaises(TypeError):
+						condition()
 
 	def test_fitness(self):
 		#TODO
 		pass
 
-	def test_consider(self):
-		#Test to be sure that the functions listed in _conditions_to_check() actually exist
-		#TODO
-		pass
-
-	def test_sticky_to_itself(self):
-		#test self._sticky_to_itself()
+	def test_sticky_to_complement(self):
+		#test self._sticky_to_complement()
 		#TODO
 		pass
 
@@ -267,7 +302,7 @@ class ArbiterTests(unittest.TestCase):
 		#TODO
 		pass
 
-	def test_not_sticky_to_itself(self):
+	def test_not_sticky_to_pairs(self):
 		#test self._not_sticky_to_pairs()
 		#TODO
 		pass
@@ -345,7 +380,7 @@ def get_py_filename_list(directory):
 	for file in os.listdir(directory):
 		if file.endswith(".py"):
 			filename = os.path.splitext(file)[0]
-			if filename.lower() != "abstract":
+			if filename.lower() not in ["abstract", "__init__"]:
 				filenames.append(filename)
 	return filenames
 
