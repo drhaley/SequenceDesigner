@@ -18,12 +18,12 @@ MAX_FITNESS = 100   #used as a learning parameter to give feedback on considered
 #tuning parameters for use in considering sequence viability
 #TODO: accept tuning parameters as arguments in related functions or pull from parameter file
 MIN_AFFINITY_TO_SELF = 12.0
-MAX_AFFINITY_TO_OTHER_SINGLE = 6.0
-MAX_AFFINITY_TO_OTHER_PAIR = 6.0
+MAX_AFFINITY_TO_OTHER_SINGLE = 5.0
+MAX_AFFINITY_TO_OTHER_PAIR = 5.0
 ###############################
 
 ###############################
 # #TODO: connect verbosity and max_considered to command-line arguments or to the parameter file
 VERBOSE = False
-MAX_SEQUENCES_CONSIDERED = 100
+MAX_SEQUENCES_CONSIDERED = 1000
 ###############################

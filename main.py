@@ -21,17 +21,7 @@ sys.path.append(os.getcwd())
 ###################################################
 def main():
 	command_line_parameters = process_command_line_args()
-	
-	if SETTINGS_FILENAME in command_line_parameters:
-		settings_filename = command_line_parameters[SETTINGS_FILENAME]
-	else:
-		settings_filename = "settings.json"
-	
-	with open(settings_filename) as infile:
-		runtime_parameters = json.load(infile)
-	
-	#the settings from the file can be overriden by the command line arguments
-	runtime_parameters.update(command_line_parameters)
+	runtime_parameters = get_runtime_parameters(command_line_parameters)
 
 	oracle = get_oracle(
 		runtime_parameters[ORACLE],
@@ -52,17 +42,19 @@ def main():
 		]
 	)
 
-	#TODO: load "found sequences" from file, if any
-	found_sequences = []
-	
 	arbiter = get_arbiter(
 		runtime_parameters[ARBITER],
 		oracle = oracle,
-		initial_sequences = found_sequences,
-		save_filename = None,
 		verbose = VERBOSE
 	)
+
+	loop_through_sequences(sequence_iterator, arbiter)
 	
+	print(arbiter.get_sequences())
+
+###################################################
+
+def loop_through_sequences(sequence_iterator, arbiter):
 	for count, sequence in enumerate(sequence_iterator):
 		if VERBOSE: print() #newline
 		arbiter.consider(sequence)
@@ -71,10 +63,7 @@ def main():
 
 		if (count >= MAX_SEQUENCES_CONSIDERED): break   #TODO: don't break
 
-	print(arbiter.get_sequences())
-
 ###################################################
-
 
 def process_command_line_args():
 	parser = argparse.ArgumentParser()
@@ -123,6 +112,20 @@ def process_command_line_args():
 		if val is not None
 	}
 	return scrubbed_parameters
+
+def get_runtime_parameters(command_line_parameters):
+	if SETTINGS_FILENAME in command_line_parameters:
+		settings_filename = command_line_parameters[SETTINGS_FILENAME]
+	else:
+		settings_filename = "settings.json"
+	
+	with open(settings_filename) as infile:
+		runtime_parameters = json.load(infile)
+	
+	#the settings from the file can be overriden by the command line arguments
+	runtime_parameters.update(command_line_parameters)
+
+	return runtime_parameters
 
 def get_oracle(oracle_name, *args, **kargs):
 	oracle_lib = importlib.import_module(f"oracle.{oracle_name}")
