@@ -30,23 +30,26 @@ class AbstractArbiter(abc.ABC):
         self._save_filename = save_filename
 
     def consider(self, sequence):
-        conditions_to_check = self._conditions_to_check()
-
-        results = [
-            check_condition(sequence)
-            for check_condition in conditions_to_check
-        ]
-
-        accept = all([check_result for check_result,_ in results])
-        overall_fitness = (
-            sum([fitness**2 for _,fitness in results])
-            // ((MAX_FITNESS**2)*len(conditions_to_check))
-        )
-
-        if accept:
-            self._accept(sequence)
+        if sequence in self._accepted_sequences:
+            overall_fitness = 0
         else:
-            self._reject(sequence)
+            conditions_to_check = self._conditions_to_check()
+
+            results = [
+                check_condition(sequence)
+                for check_condition in conditions_to_check
+            ]
+
+            accept = all([check_result for check_result,_ in results])
+            overall_fitness = (
+                sum([fitness**2 for _,fitness in results])
+                // ((MAX_FITNESS**2)*len(conditions_to_check))
+            )
+
+            if accept:
+                self._accept(sequence)
+            else:
+                self._reject(sequence)
 
         return overall_fitness
 
@@ -61,17 +64,25 @@ class AbstractArbiter(abc.ABC):
         with open(filename, "r") as inFile:
             sequence = inFile.readline().strip()
             while sequence:
-                if sequence not in self._accepted_sequences:
-                    self._accepted_sequences.append(sequence)
+                self._accept(sequence)
                 sequence = inFile.readline().strip()
                 
     def _accept(self, sequence):
-        self._accepted_sequences.append(sequence)
+        self._add(sequence)
         if self._verbose: print(f"Accepted {sequence}")
         self._save()
 
     def _reject(self, sequence):
+        self._remove(sequence)
         if self._verbose: print(f"Rejected {sequence}")
+
+    def _add(self, sequence):
+        if sequence not in self._accepted_sequences:
+            self._accepted_sequences.append(sequence)
+
+    def _remove(self, sequence):
+        if sequence in self._accepted_sequences:
+            self._accepted_sequences.remove(sequence)
 
     def _save(self):
         if self._save_filename:
@@ -79,26 +90,26 @@ class AbstractArbiter(abc.ABC):
                 for accepted_sequence in self._accepted_sequences:
                     outFile.write(f"{accepted_sequence}\n")
 
-    def _proportion_exceeding_target(self, value, target):
-        fitness = MAX_FITNESS * (value - target) / target
+    def _inverse_proportion_exceeding_target(self, value, target):
+        fitness = MAX_FITNESS * (2 - (value / target))
         fitness = min(fitness, MAX_FITNESS)
         return fitness
 
     def _proportion_of_target(self, value, target):
-        fitness = MAX_FITNESS * (target - value) / target
+        fitness = MAX_FITNESS * value / target
         fitness = min(fitness, MAX_FITNESS)
         return fitness
 
-    def _sticky_to_complement(self, sequence):
+    def _sticky_to_complement(self, sequence, threshold = MIN_AFFINITY_TO_SELF):
         affinity_to_self = self._oracle.binding_affinity(sequence, common.wc(sequence))
-        sticky_to_complement = affinity_to_self >= MIN_AFFINITY_TO_SELF
+        sticky_to_complement = affinity_to_self >= threshold
 
         if self._verbose: print(f"\tself affinity: {affinity_to_self}")
 
-        fitness = self._proportion_of_target(affinity_to_self, MIN_AFFINITY_TO_SELF)
+        fitness = self._proportion_of_target(affinity_to_self, threshold)
         return sticky_to_complement, fitness
 
-    def _not_sticky_to_others(self, sequence):
+    def _not_sticky_to_others(self, sequence, threshold = MAX_AFFINITY_TO_OTHER_SINGLE):
         if not self._accepted_sequences:
             not_sticky_to_other_singles = True
             fitness = MAX_FITNESS
@@ -111,12 +122,12 @@ class AbstractArbiter(abc.ABC):
             ]
 
             not_sticky_to_other_singles = all([
-                affinity <= MAX_AFFINITY_TO_OTHER_SINGLE
+                affinity <= threshold
                 for affinity in affinity_to_other_singles
             ])
 
             max_affinity = max(affinity_to_other_singles)
-            fitness = self._proportion_exceeding_target(max_affinity, MAX_AFFINITY_TO_OTHER_SINGLE)
+            fitness = self._inverse_proportion_exceeding_target(max_affinity, threshold)
 
             if self._verbose and self._accepted_sequences:
                 print(f"\tmax affinity to other singles: {max_affinity}")
@@ -124,7 +135,7 @@ class AbstractArbiter(abc.ABC):
         return not_sticky_to_other_singles, fitness
 
 
-    def _not_sticky_to_pairs(self, sequence):
+    def _not_sticky_to_pairs(self, sequence, threshold = MAX_AFFINITY_TO_OTHER_PAIR):
         if not self._accepted_sequences:
             not_sticky_to_other_pairs = True
             fitness = MAX_FITNESS
@@ -138,12 +149,12 @@ class AbstractArbiter(abc.ABC):
                     ]
             ]
             not_sticky_to_other_pairs = all([
-                affinity <= MAX_AFFINITY_TO_OTHER_PAIR
+                affinity <= threshold
                 for affinity in affinity_to_other_pairs
             ])
             
             max_affinity = max(affinity_to_other_pairs)
-            fitness = self._proportion_exceeding_target(max_affinity, MAX_AFFINITY_TO_OTHER_PAIR)
+            fitness = self._inverse_proportion_exceeding_target(max_affinity, threshold)
 
             if self._verbose and self._accepted_sequences:
                 print(f"\tmax affinity to other pairs: {max_affinity}")
@@ -151,7 +162,7 @@ class AbstractArbiter(abc.ABC):
         return not_sticky_to_other_pairs, fitness
 
 
-    def _not_sticky_with_adjacent(self, sequence):
+    def _not_sticky_with_adjacent(self, sequence, threshold = MAX_AFFINITY_TO_OTHER_PAIR):
         if not self._accepted_sequences:
             not_sticky_when_with_adjacent_domain = True
             fitness = MAX_FITNESS
@@ -164,12 +175,12 @@ class AbstractArbiter(abc.ABC):
                 if adjacent_domain != starred_domain
             ]
             not_sticky_when_with_adjacent_domain = all([
-                affinity <= MAX_AFFINITY_TO_OTHER_PAIR
+                affinity <= threshold
                 for affinity in mid_domain_affinities
             ])
             
             max_affinity = max(mid_domain_affinities)
-            fitness = self._proportion_exceeding_target(max_affinity, MAX_AFFINITY_TO_OTHER_PAIR)
+            fitness = self._inverse_proportion_exceeding_target(max_affinity, threshold)
 
             if self._verbose and self._accepted_sequences:
                 print(f"\tmax mid-domain affinity: {max(mid_domain_affinities)}")

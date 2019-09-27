@@ -7,6 +7,7 @@ import re
 import random
 import tempfile
 from util import common
+from util.constants import MAX_FITNESS
 
 #add the project dir to the python path
 import sys
@@ -288,29 +289,76 @@ class ArbiterTests(unittest.TestCase):
 					with self.assertRaises(TypeError):
 						condition()
 
-	def test_fitness(self):
-		#TODO
-		pass
+	def _fitness_value_check(self, intended_result, fitness):
+		if intended_result:
+			self.assertTrue(fitness == MAX_FITNESS)
+		else:
+			self.assertTrue(fitness < MAX_FITNESS)
 
 	def test_sticky_to_complement(self):
-		#test self._sticky_to_complement()
-		#TODO
-		pass
+		TEST_CASES = [
+			("C"*12, 8.0, True),
+			("A"*12, 8.0, True),
+			("AATT"*4, 5.0, True),
+			("AA", 8.0, False),
+		]
+		for arbiter in self._arbiter_list:
+			for test_case in TEST_CASES:
+				with self.subTest(arbiter = arbiter, test_case = test_case):
+					(sequence, threshold, sticky) = test_case
+					accept, fitness = arbiter._sticky_to_complement(sequence, threshold = threshold)
+					self.assertEqual(accept, sticky)
+					self._fitness_value_check(sticky, fitness)
 
 	def test_not_sticky_to_others(self):
-		#test self._not_sticky_to_others()
-		#TODO
-		pass
+		TEST_CASES = [
+			("C"*12, "C"*12, 8.0, False),
+			("C"*12, "G"*12, 8.0, False),
+			("C"*12, "A"*12, 8.0, True),
+		]
+		for arbiter in self._arbiter_list:
+			for test_case in TEST_CASES:
+				with self.subTest(arbiter = arbiter, test_case = test_case):
+					(sequence1, sequence2, threshold, not_sticky) = test_case
+					arbiter._add(sequence1)
+					accept, fitness = arbiter._not_sticky_to_others(sequence2, threshold = threshold)
+					arbiter._remove(sequence1)
+					self.assertEqual(accept, not_sticky)
+					self._fitness_value_check(not_sticky, fitness)
 
 	def test_not_sticky_to_pairs(self):
-		#test self._not_sticky_to_pairs()
-		#TODO
-		pass
+		TEST_CASES = [
+			("C"*12, "C"*11+"G", 8.0, False),  #complement of CCCG is sticky to CCCC
+			("C"*12, "G"*12, 8.0, True),       #complement of GGGG is not sticky to CCCC
+			("C"*12, "A"*12, 8.0, True),       #complement of AAAA is not sticky to CCCC
+			("CCCCAAAAAACCCC", "CCCCCCCC", 8.0, False)   #complement of CCCC is sticky to the pair
+		]
+		for arbiter in self._arbiter_list:
+			for test_case in TEST_CASES:
+				with self.subTest(arbiter = arbiter, test_case = test_case):
+					(sequence1, sequence2, threshold, not_sticky) = test_case
+					arbiter._add(sequence1)
+					accept, fitness = arbiter._not_sticky_to_pairs(sequence2, threshold = threshold)
+					arbiter._remove(sequence1)
+					self.assertEqual(accept, not_sticky)
+					self._fitness_value_check(not_sticky, fitness)
 	
-	def test_not_sticky_to_adjacent(self):
-		#test self._not_sticky_to_adjacent()
-		#TODO
-		pass			
+	def test_not_sticky_with_adjacent(self):
+		TEST_CASES = [
+			("C"*12, "C"*11+"G", 8.0, False),
+			("C"*12, "A"*12, 8.0, True),
+			("C"*12, "A"*12, 8.0, True),
+			("CCCCCC", "CCCAAAAAACCC", 8.0, False)
+		]
+		for arbiter in self._arbiter_list:
+			for test_case in TEST_CASES:
+				with self.subTest(arbiter = arbiter, test_case = test_case):
+					(sequence1, sequence2, threshold, not_sticky) = test_case
+					arbiter._add(sequence1)
+					accept, fitness = arbiter._not_sticky_with_adjacent(sequence2, threshold = threshold)
+					arbiter._remove(sequence1)
+					self.assertEqual(accept, not_sticky)
+					self._fitness_value_check(not_sticky, fitness)	
 
 
 class UtilTests(unittest.TestCase):

@@ -36,7 +36,7 @@ class Oracle(AbstractOracle):
 
     def binding_affinity(self, sequence1, sequence2):
         if self._use_subprocess:
-            minimum_free_energy = self._subprocess_binding_affinity(sequence1, sequence2)
+            minimum_free_energy = self._subprocess_binding_energy(sequence1, sequence2)
         elif self._use_duplex:
             minimum_free_energy = RNA.duplexfold(sequence1, sequence2).energy
         else:
@@ -54,9 +54,9 @@ class Oracle(AbstractOracle):
     
     def _subprocess_self_affinity(self, sequence):
         user_input = sequence + self._VIENNA_QUIT_STRING
-        return self._get_energy_from_subprocess('RNAfold', user_input)
+        return self._get_energy_from_subprocess('RNAfold', '-p', user_input)
 
-    def _subprocess_binding_affinity(self, sequence1, sequence2):
+    def _subprocess_binding_energy(self, sequence1, sequence2):
         """Calls RNAduplex or RNAcofold on a pair of strings using 'ATCG'"""
 
         #comment ported from legacy code:
@@ -66,17 +66,20 @@ class Oracle(AbstractOracle):
     
         if self._use_duplex:
             executable_name = 'RNAduplex'
+            additional_parameters = ''
             user_input = '\n'.join([sequence1,sequence2]) + self._VIENNA_QUIT_STRING
         else:
             executable_name = 'RNAcofold'
+            additional_parameters = '-p0'
             user_input = '&'.join([sequence1,sequence2]) + self._VIENNA_QUIT_STRING
 
-        return self._get_energy_from_subprocess(executable_name, user_input)
+        return self._get_energy_from_subprocess(executable_name, additional_parameters, user_input)
         
-    def _get_energy_from_subprocess(self, executable_name, user_input):
+    def _get_energy_from_subprocess(self, executable_name, additional_parameters, user_input):
         vienna_process = subprocess.Popen(
             [
                 executable_name,
+                additional_parameters,
                 '-P', self._params_filename,
                 '-T', str(self._temperature),
                 '--noGU',
