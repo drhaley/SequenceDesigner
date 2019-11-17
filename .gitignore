@@ -2,6 +2,10 @@
 .vscode
 .idea
 
+#no test coverage reports
+.coverage
+htmlcov
+
 #no PyCache
 __pycache__
 *.pyc

@@ -73,7 +73,7 @@ install:
 
 # command to run tests
 script:
-  - $PYTHON_EXECUTABLE tests/designer_tests.py
+  - $PYTHON_EXECUTABLE -m unittest
 
 #Don't send emails about tests to the repo owner
 notifications:
