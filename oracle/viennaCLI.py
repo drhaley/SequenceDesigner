@@ -84,11 +84,13 @@ class Oracle(AbstractOracle):
                 raise ValueError('RNAduplex error')
 
         FLOATING_POINT_NUMBER_REGEX = r"\s*([-+]?[0-9]*\.?[0-9]+)\s*"
+
         PARENS_NUMBER_REGEX = "".join([
             r"\(",
             FLOATING_POINT_NUMBER_REGEX,
             r"\)"
         ])
+
         ENSEMBLE_ENERGY_REGEX = "".join([
             r"free energy of ensemble =",
             FLOATING_POINT_NUMBER_REGEX,

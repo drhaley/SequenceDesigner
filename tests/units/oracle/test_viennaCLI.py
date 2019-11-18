@@ -9,6 +9,9 @@ class FakeProcess():
         self.fake_energy = 742
         self.fake_stderr = ""
 
+    def __update__(self, arg_list):
+        self.arg_list = arg_list
+
     def communicate(self, user_input):
         self.user_input = user_input
 
@@ -90,8 +93,12 @@ class FakeProcess():
         pass
 
 class SensingViennaCLI(full_vienna_CLI.Oracle):
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
+        self.fake_process = FakeProcess([])
+
     def _open_subprocess(self, arg_list):
-        self.fake_process = FakeProcess(arg_list)
+        self.fake_process.__update__(arg_list)
         return self.fake_process
 
 class TestViennaCLI(unittest.TestCase):
@@ -115,19 +122,75 @@ class TestViennaCLI(unittest.TestCase):
         self.assertEqual(arg_list[filename_index], TEST_FILENAME)
 
     def test_uses_duplex(self):
-        pass
+        self.oracle = SensingViennaCLI(self.TEMPERATURE, use_duplex=True)
+        self.oracle.binding_affinity("CCCC","CCCC")
+        arg_list = self.oracle.fake_process.arg_list
+        self.assertEqual(arg_list[0], "RNAduplex")
 
     def test_uses_cofold(self):
-        pass
+        self.oracle = SensingViennaCLI(self.TEMPERATURE, use_duplex=False)
+        self.oracle.binding_affinity("GGGG","GGGG")
+        arg_list = self.oracle.fake_process.arg_list
+        self.assertEqual(arg_list[0], "RNAcofold")
+
+    def test_uses_fold(self):
+        self.oracle.self_affinity("ATCG")
+        arg_list = self.oracle.fake_process.arg_list
+        self.assertEqual(arg_list[0], "RNAfold")
 
     def test_set_temperature(self):
-        pass
+        ALTERNATE_TEMPERATURE = 52.7
+        self.oracle.set_temperature(ALTERNATE_TEMPERATURE)
+        self.oracle.self_affinity("AAAAAAA")
+        arg_list = self.oracle.fake_process.arg_list
+        temperature_index = arg_list.index("-T") + 1
+        self.assertEqual(float(arg_list[temperature_index]), ALTERNATE_TEMPERATURE)
 
-    def test_self_affinity(self):
-        pass
+    def test_self_affinity_user_input(self):
+        TEST_SEQUENCE = "AATTCCGG"
+        self.oracle.self_affinity(TEST_SEQUENCE)
+        user_input = self.oracle.fake_process.user_input
+        self.assertEqual(
+            user_input,
+            (TEST_SEQUENCE + "\n@\n").encode('utf-8')
+        )
 
-    def test_binding_affinity(self):
-        pass
+    def test_binding_affinity_user_input_with_duplex(self):
+        self.oracle = SensingViennaCLI(self.TEMPERATURE, use_duplex=True)
+        TEST_SEQUENCES = ["ATTCCG", "AATCGG"]
+        self.oracle.binding_affinity(*TEST_SEQUENCES)
+        user_input = self.oracle.fake_process.user_input
+        self.assertEqual(
+            user_input,
+            ('\n'.join(TEST_SEQUENCES) + "\n@\n").encode('utf-8')
+        )
 
-    def test_get_energy_from_subprocess(self):
-        pass
+    def test_binding_affinity_user_input_with_cofold(self):
+        self.oracle = SensingViennaCLI(self.TEMPERATURE, use_duplex=False)
+        TEST_SEQUENCES = ["ATTCCGGGG", "AATCGGGGG"]
+        self.oracle.binding_affinity(*TEST_SEQUENCES)
+        user_input = self.oracle.fake_process.user_input
+        self.assertEqual(
+            user_input,
+            ('&'.join(TEST_SEQUENCES) + "\n@\n").encode('utf-8')
+        )
+
+    def test_self_affinity_is_negative_energy(self):
+        ENERGY = -101
+        self.oracle.fake_process.fake_energy = ENERGY
+        affinity = self.oracle.self_affinity("A")
+        self.assertEqual(affinity, -ENERGY)
+
+    def test_binding_affinity_is_negative_energy_with_duplex(self):
+        ENERGY = -102
+        self.oracle = SensingViennaCLI(self.TEMPERATURE, use_duplex=True)
+        self.oracle.fake_process.fake_energy = ENERGY
+        affinity = self.oracle.binding_affinity("A", "T")
+        self.assertEqual(affinity, -ENERGY)
+
+    def test_binding_affinity_is_negative_energy_with_cofold(self):
+        ENERGY = -103
+        self.oracle = SensingViennaCLI(self.TEMPERATURE, use_duplex=False)
+        self.oracle.fake_process.fake_energy = ENERGY
+        affinity = self.oracle.binding_affinity("C", "G")
+        self.assertEqual(affinity, -ENERGY)
