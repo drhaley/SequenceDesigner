@@ -5,6 +5,10 @@ from oracle.abstract import AbstractOracle
 
 class Oracle(AbstractOracle):
     _DEFAULT_PARAMS_FILENAME = "lib/dna_mathews2004.par"
+    _VIENNA_QUIT_STRING = "\n@\n"
+    _IGNORED_ERRORS = [
+        'WARNING: stacking enthalpies not symmetric',
+    ]
 
     def __init__(self, temperature, 
             params_filename=None, use_duplex=True):
@@ -18,19 +22,14 @@ class Oracle(AbstractOracle):
         self._temperature = temperature
 
     def self_affinity(self, sequence):
-        minimum_free_energy = self._subprocess_self_affinity(sequence)
+        minimum_free_energy = self._subprocess_self_binding_energy(sequence)
         return -minimum_free_energy
 
     def binding_affinity(self, sequence1, sequence2):
         minimum_free_energy = self._subprocess_binding_energy(sequence1, sequence2)
         return -minimum_free_energy
-
-    _VIENNA_QUIT_STRING = "\n@\n"
-    _IGNORED_ERRORS = [
-        'WARNING: stacking enthalpies not symmetric',
-    ]
     
-    def _subprocess_self_affinity(self, sequence):
+    def _subprocess_self_binding_energy(self, sequence):
         user_input = sequence + self._VIENNA_QUIT_STRING
         return self._get_energy_from_subprocess('RNAfold', '-p', user_input)
 
@@ -52,9 +51,15 @@ class Oracle(AbstractOracle):
             user_input = '&'.join([sequence1,sequence2]) + self._VIENNA_QUIT_STRING
 
         return self._get_energy_from_subprocess(executable_name, additional_parameters, user_input)
+
+    def _open_subprocess(self, arg_list):
+        return subprocess.Popen(
+            arg_list,
+            stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+        )  
         
     def _get_energy_from_subprocess(self, executable_name, additional_parameters, user_input):
-        vienna_process = subprocess.Popen(
+        vienna_process = self._open_subprocess(
             [
                 executable_name,
                 additional_parameters,
@@ -62,8 +67,7 @@ class Oracle(AbstractOracle):
                 '-T', str(self._temperature),
                 '--noGU',
                 '--noconv',
-            ],
-            stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+            ]
         )  
 
         try: 
@@ -79,9 +83,22 @@ class Oracle(AbstractOracle):
                 print('Warning or error from RNAduplex: ', stderr)
                 raise ValueError('RNAduplex error')
 
-        FLOATING_POINT_NUMBER_REGEX = r"\(\s*([-+]?[0-9]*\.?[0-9]+)\)"  #looks for number in parens e.g. (-41.70) or (  0.00)
-        energy = float(
-            re.search(FLOATING_POINT_NUMBER_REGEX, output).group(1) #just get middle part (no parens)
-        )
-        return energy
+        FLOATING_POINT_NUMBER_REGEX = r"\s*([-+]?[0-9]*\.?[0-9]+)\s*"
+        PARENS_NUMBER_REGEX = "".join([
+            r"\(",
+            FLOATING_POINT_NUMBER_REGEX,
+            r"\)"
+        ])
+        ENSEMBLE_ENERGY_REGEX = "".join([
+            r"free energy of ensemble =",
+            FLOATING_POINT_NUMBER_REGEX,
+            r"kcal\/mol"
+        ])
 
+        search_result = re.search(f"{ENSEMBLE_ENERGY_REGEX}|{PARENS_NUMBER_REGEX}", output)
+
+        energy = search_result.group(1)
+        if energy is None:
+            energy = search_result.group(2)
+
+        return float(energy)
