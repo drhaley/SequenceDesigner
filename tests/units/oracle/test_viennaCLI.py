@@ -1,5 +1,4 @@
 import unittest
-import importlib
 
 from oracle import viennaCLI as full_vienna_CLI
 
