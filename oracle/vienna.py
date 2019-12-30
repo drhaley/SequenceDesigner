@@ -12,7 +12,7 @@ DEFAULT_PARAMS_FILE = "lib/dna_mathews2004.par"
 
 class Oracle(AbstractOracle):
     def __init__(self, temperature,
-            use_duplex=True, params_filename=DEFAULT_PARAMS_FILE, **kargs):
+            use_duplex=True, params_filename=DEFAULT_PARAMS_FILE):
         self._use_duplex = use_duplex
         self._params_filename = params_filename
         self.set_temperature(temperature)
