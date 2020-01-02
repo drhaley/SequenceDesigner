@@ -101,62 +101,27 @@ class SensingNupackCLI(full_nupack.Oracle):
         return self.fake_process
 
 class TestNupackCLI(unittest.TestCase):
-    TEMPERATURE = 41.2
+    TEMPERATURE = 40.7
 
     def setUp(self):
         self.oracle = SensingNupackCLI(self.TEMPERATURE)
 
-    def test_init_temperature(self):
-        self.oracle.self_affinity("AAAA")
-        arg_list = self.oracle.fake_process.arg_list
-        temperature_index = arg_list.index("-T") + 1
-        self.assertEqual(float(arg_list[temperature_index]), self.TEMPERATURE)
-
-    def test_uses_dna_argument(self):
-        self.oracle.binding_affinity("CCCC","CCCC")
-        arg_list = self.oracle.fake_process.arg_list
-        self.assertTrue("dna" in arg_list)
-
-    def test_set_temperature(self):
-        ALTERNATE_TEMPERATURE = 52.7
-        self.oracle.set_temperature(ALTERNATE_TEMPERATURE)
-        self.oracle.self_affinity("AAAAAAA")
-        arg_list = self.oracle.fake_process.arg_list
-        temperature_index = arg_list.index("-T") + 1
-        self.assertEqual(float(arg_list[temperature_index]), ALTERNATE_TEMPERATURE)
-
-    def test_self_affinity_user_input(self):
-        TEST_SEQUENCE = "AATTCCGG"
-        self.oracle.self_affinity(TEST_SEQUENCE)
-        user_input = self.oracle.fake_process.user_input
-        self.assertEqual(
-            user_input,
-            (f'1\n{TEST_SEQUENCE}\n1').encode('utf-8')
-        )
-
-    def test_binding_affinity_user_input(self):
-        TEST_SEQUENCES = ["ATTCCG", "AATCGG"]
-        self.oracle.binding_affinity(*TEST_SEQUENCES)
-        user_input = self.oracle.fake_process.user_input
-        self.assertEqual(
-            user_input,
-            ('2\n' + '\n'.join(TEST_SEQUENCES) + '\n1 2').encode('utf-8')
-        )
-
-    def test_self_affinity_is_negative_energy(self):
+    def test_self_affinity_is_positive(self):
         ENERGY = -101
         self.oracle.fake_process.fake_energy = ENERGY
         affinity = self.oracle.self_affinity("A")
-        self.assertEqual(affinity, -ENERGY)
+        self.assertTrue(affinity > 0)
 
-    def test_binding_affinity_is_negative_energy(self):
+    def test_binding_affinity_is_positive(self):
         ENERGY = -102
         self.oracle.fake_process.fake_energy = ENERGY
         affinity = self.oracle.binding_affinity("A", "T")
-        self.assertEqual(affinity, -ENERGY)
+        self.assertTrue(affinity > 0)
 
     def test_infinite_energy_should_be_zero(self):
         self.oracle.fake_process.fake_energy = "inf"
         inf_affinity = self.oracle.binding_affinity("A", "T")
-        self.assertEqual(inf_affinity, 0.0)
+        self.oracle.fake_process.fake_energy = 0.0
+        zero_affinity = self.oracle.binding_affinity("A", "T")
+        self.assertEqual(inf_affinity, zero_affinity)
 
