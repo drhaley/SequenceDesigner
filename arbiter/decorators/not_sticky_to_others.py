@@ -6,6 +6,10 @@ class Decorator(AbstractArbiterDecorator):
     Asserts that the sequence has weak affinity to other sequences in the collection
     (i.e. for new sequence a, the affinities of a-b, a-b*, a*-b, and a*-b* are all weak)
     """
+    def __init__(self, parent, threshold):
+        super().__init__(parent)
+        self._threshold = threshold
+
     def _check_single_condition(self, sequence):
         a = sequence
         a_star = common.wc(a)

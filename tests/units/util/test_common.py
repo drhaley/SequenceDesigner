@@ -40,5 +40,5 @@ class TestUtil(unittest.TestCase):
 			)
 
 	def test_regex_search(self):
-		self.assertTrue(common.regex_search("AA", ["AAAA", "TTTT"]))
-		self.assertFalse(common.regex_search("CA", ["AAAA", "TTTT"]))
+		self.assertTrue(common.regex_search("AAAA", ["AA", "TT"]))
+		self.assertFalse(common.regex_search("CACA", ["AA", "TT"]))

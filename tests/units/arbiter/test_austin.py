@@ -4,13 +4,13 @@ from arbiter.austin import Arbiter
 
 class FakeOracle():
     lookups = {
-        ("AAAA", "TTTT"): 10.0,
-        ("AAAA", "CCCC"): 0.0,
-        ("AAAA", "GGGG"): 0.0,
-        ("TTTT", "CCCC"): 0.0,
-        ("TTTT", "GGGG"): 0.0,
-        ("TTTT", "CCCCCCCC"): 0.0,
-        ("GGGG", "AAAAAAAA"): 0.0,
+        ("AACC", "GGTT"): 10.0,
+        ("AACC", "ATCG"): 0.0,
+        ("AACC", "CGAT"): 0.0,
+        ("GGTT", "ATCG"): 0.0,
+        ("GGTT", "CGAT"): 0.0,
+        ("GGTT", "ATCGATCG"): 0.0,
+        ("CGAT", "AACCAACC"): 0.0,
     }
 
     def binding_affinity(self, seq1, seq2):
@@ -23,7 +23,7 @@ class FakeOracle():
 class TestAustinArbiter(unittest.TestCase):
     def setUp(self):
         self.oracle = FakeOracle()
-        self.collection = {"CCCC"}
+        self.collection = {"ATCG"}
 
         stickiness = 8.0
         single_domain_threshold = 4.0
@@ -38,20 +38,34 @@ class TestAustinArbiter(unittest.TestCase):
         )
 
     def test_austin_good_consider(self):
-        accept = self.arbiter.consider("AAAA")
+        accept = self.arbiter.consider("AACC")
         self.assertTrue(accept)
 
     def test_austin_weak_sticky_to_self(self):
-        self.oracle.lookups[("AAAA", "TTTT")] = 0.0
-        accept = self.arbiter.consider("AAAA")
+        self.oracle.lookups[("AACC", "GGTT")] = 0.0
+        accept = self.arbiter.consider("AACC")
         self.assertFalse(accept)
 
     def test_austin_sticky_to_other(self):
-        self.oracle.lookups[("AAAA", "CCCC")] = 10.0
-        accept = self.arbiter.consider("AAAA")
+        self.oracle.lookups[("AACC", "ATCG")] = 10.0
+        accept = self.arbiter.consider("AACC")
         self.assertFalse(accept)
 
     def test_austin_sticky_to_pair(self):
-        self.oracle.lookups[("GGGG", "AAAAAAAA")] = 10.0
-        accept = self.arbiter.consider("AAAA")
+        self.oracle.lookups[("CGAT", "AACCAACC")] = 10.0
+        accept = self.arbiter.consider("AACC")
         self.assertFalse(accept)
+
+    def test_austin_filters(self):
+        #these should be filtered immediately without attempting to call the oracle
+        forbidden_sequences = [
+            "ACGCGA",
+            "CAATATG",
+            "ATACC",
+            "CCATA",
+            "CAAAAC",
+            "GTTTTG",
+        ]
+        for sequence in forbidden_sequences:
+            with self.subTest(sequence=sequence):
+                self.assertFalse(self.arbiter.consider(sequence))

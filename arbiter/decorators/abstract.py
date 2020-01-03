@@ -17,13 +17,12 @@ class AbstractArbiterDecorator(abc.ABC):
 
 
     ################################
-    # the following are not abstract methods and should not be redefined
+    # the following are not abstract methods
+    # and should not be overridden without calling back to them through super()
     ################################
 
-    def __init__(self, parent, threshold, **kargs):
+    def __init__(self, parent):
         self._parent = parent
-        self._threshold = threshold
-        self._kargs = kargs
 
     @property
     def _oracle(self):

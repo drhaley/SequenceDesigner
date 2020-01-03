@@ -17,8 +17,8 @@ class TestAbstractDecorator(unittest.TestCase):
         self.oracle = None
         self.collection = set()
         self.base_arbiter = Arbiter(self.oracle, self.collection)
-        self.true_arbiter = TrueDecorator(self.base_arbiter, 0.0)
-        self.false_arbiter = FalseDecorator(self.base_arbiter, 0.0)
+        self.true_arbiter = TrueDecorator(self.base_arbiter)
+        self.false_arbiter = FalseDecorator(self.base_arbiter)
 
     def test_consider_passthrough(self):
         SEQUENCE = "CCC"

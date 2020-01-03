@@ -10,6 +10,10 @@ class Decorator(AbstractArbiterDecorator):
     DOES NOT CHECK ANY OTHER COMPLEMENTS
     Designed for efficiency, so that unnecessary checks are not performed when using three-letter code sequences
     """
+    def __init__(self, parent, threshold):
+        super().__init__(parent)
+        self._threshold = threshold
+
     def _check_single_condition(self, sequence):
         a = sequence
         a_star = common.wc(a)

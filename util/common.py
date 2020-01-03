@@ -31,9 +31,9 @@ def wc(sequence):
 
     return ''.join(mapped_char_list)
 
-def regex_search(substring, search_list):
+def regex_search(full_string, search_list):
     for regex in search_list:
-        if re.search(substring, regex) is not None:
+        if re.search(regex, full_string) is not None:
             return True
     else:
         return False
