@@ -1,7 +1,7 @@
 from util import common
 from arbiter.decorators.abstract import AbstractArbiterDecorator
 
-class NotStickyToPairsDecorator(AbstractArbiterDecorator):
+class Decorator(AbstractArbiterDecorator):
     """
     Asserts that the sequence has weak affinity in a 2-1 situation
     (i.e. for new sequence a, the following affinities are weak:

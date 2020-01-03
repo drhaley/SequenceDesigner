@@ -1,7 +1,7 @@
 import unittest
 
 from arbiter.base import Arbiter
-from arbiter.decorators.not_sticky_to_pairs import NotStickyToPairsDecorator
+from arbiter.decorators import not_sticky_to_pairs
 
 class FakeOracle():
     def __init__(self):
@@ -18,7 +18,7 @@ class TestNotStickyToPairsDecorator(unittest.TestCase):
         self.oracle = FakeOracle()
         self.collection = ["ATCG", "GGGAAAA", "CCCCC"]
         base_arbiter = Arbiter(self.oracle, self.collection)
-        self.arbiter = NotStickyToPairsDecorator(base_arbiter, self.threshold)
+        self.arbiter = not_sticky_to_pairs.Decorator(base_arbiter, self.threshold)
 
     def test_low_affinity(self):
         self.oracle.affinity = self.threshold - 1.0
