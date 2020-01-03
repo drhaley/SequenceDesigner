@@ -1,4 +1,5 @@
 import itertools
+import re
 
 def product_strings(length,alphabet):
     return [''.join(character_list) for character_list in itertools.product(alphabet,repeat=length)]
@@ -30,3 +31,9 @@ def wc(sequence):
 
     return ''.join(mapped_char_list)
 
+def regex_search(full_string, search_list):
+    for regex in search_list:
+        if re.search(regex, full_string) is not None:
+            return True
+    else:
+        return False

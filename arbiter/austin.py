@@ -1,12 +1,27 @@
-from arbiter.abstract import AbstractArbiter
+#factory method to produce the arbiter discussed with collaborators in DS group at UT Austin
 
-class Arbiter(AbstractArbiter):
-###################################################
-    def _conditions_to_check(self):
-        return [
-            self._sticky_to_complement,       #a-a* strong
-            self._not_sticky_to_others,       #a-b* weak
-            self._not_sticky_to_pairs,        #xy-a* weak, and xx-a* weak
-            self._not_sticky_with_adjacent,   #ay-x* weak, and aa-x* weak
-        ]
-###################################################
+from arbiter.base import Arbiter as BaseArbiter
+from arbiter.decorators import \
+    not_sticky_to_others,\
+    not_sticky_to_pairs_lite,\
+    sticky_to_complement,\
+    heuristic_filter
+
+def Arbiter(oracle, collection, desired_affinity, single_domain_threshold, double_domain_threshold):
+    forbidden_substrings = [
+			r"[CG]{4}",
+			r"[AT]{5}",
+			r"^[AT]{3}",
+			r"[AT]{3}$",
+			r"AAAA",
+			r"TTTT",
+		]
+
+    #outer decorators should be the fastest checks, so put those last
+    arbiter = BaseArbiter(oracle, collection)
+    arbiter = not_sticky_to_pairs_lite.Decorator(arbiter, double_domain_threshold)
+    arbiter = not_sticky_to_others.Decorator(arbiter, single_domain_threshold)
+    arbiter = sticky_to_complement.Decorator(arbiter, desired_affinity)
+    arbiter = heuristic_filter.Decorator(arbiter, forbidden_substrings)
+
+    return arbiter
