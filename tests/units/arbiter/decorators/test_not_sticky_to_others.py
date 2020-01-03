@@ -27,8 +27,8 @@ class TestNotStickyToOthersDecorator(unittest.TestCase):
 
     def test_high_affinity(self):
         self.oracle.affinity = self.threshold + 1.0
-        accept = self.arbiter.consider("AAAA")
-        self.assertFalse(accept)
+        with self.assertRaises(self.arbiter.Rejection):
+            self.arbiter.consider("AAAA")
 
     def test_number_of_calls(self):
         self.arbiter.consider("AAAA")

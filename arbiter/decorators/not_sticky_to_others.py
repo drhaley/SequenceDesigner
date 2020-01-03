@@ -1,5 +1,9 @@
 from util import common
-from arbiter.decorators.abstract import AbstractArbiterDecorator
+from arbiter.decorators.abstract import AbstractArbiterDecorator, Rejection
+
+class StickyToOtherReject(Rejection):
+    def __str__(self):
+        return "sticky_other"
 
 class Decorator(AbstractArbiterDecorator):
     """
@@ -17,6 +21,6 @@ class Decorator(AbstractArbiterDecorator):
             b_star = common.wc(b)
             for seq1, seq2 in [(a,b), (a, b_star), (a_star, b), (a_star, b_star)]:
                 if self._oracle.binding_affinity(seq1, seq2) >= self._threshold:
-                    return False
+                    raise StickyToOtherReject()
         else:
             return True

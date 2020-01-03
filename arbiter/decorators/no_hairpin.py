@@ -1,5 +1,9 @@
 from util import common
-from arbiter.decorators.abstract import AbstractArbiterDecorator
+from arbiter.decorators.abstract import AbstractArbiterDecorator, Rejection
+
+class HairpinReject(Rejection):
+    def __str__(self):
+        return "hairpin"
 
 class Decorator(AbstractArbiterDecorator):
     """
@@ -12,5 +16,7 @@ class Decorator(AbstractArbiterDecorator):
     def _check_single_condition(self, sequence):
         affinity_to_self = self._oracle.self_affinity(sequence, common.wc(sequence))
         sticky_to_self = affinity_to_self >= self._threshold
-
-        return sticky_to_self
+        if sticky_to_self:
+            raise HairpinReject()
+        else:
+            return True

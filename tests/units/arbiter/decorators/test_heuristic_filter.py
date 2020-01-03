@@ -30,7 +30,8 @@ class TestStickyToComplementDecorator(unittest.TestCase):
         ]
         for sequence in forbidden_sequences:
             with self.subTest(sequence=sequence):
-                self.assertFalse(self.arbiter.consider(sequence))
+                with self.assertRaises(self.arbiter.Rejection):
+                    self.arbiter.consider(sequence)
 
     def test_not_filtered(self):
         permitted_sequences = [

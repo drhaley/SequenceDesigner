@@ -1,5 +1,9 @@
 from util import common
-from arbiter.decorators.abstract import AbstractArbiterDecorator
+from arbiter.decorators.abstract import AbstractArbiterDecorator, Rejection
+
+class NotStickyReject(Rejection):
+    def __str__(self):
+        return "not_sticky"
 
 class Decorator(AbstractArbiterDecorator):
     """
@@ -12,5 +16,7 @@ class Decorator(AbstractArbiterDecorator):
     def _check_single_condition(self, sequence):
         affinity_to_complement = self._oracle.binding_affinity(sequence, common.wc(sequence))
         sticky_to_complement = affinity_to_complement >= self._threshold
-
-        return sticky_to_complement
+        if sticky_to_complement:
+            return True
+        else:
+            raise NotStickyReject()

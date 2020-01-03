@@ -23,8 +23,11 @@ def main():
 
 	for _ in range(NUMBER_OF_ITERATIONS):
 		sequence = next(generator)
-		if arbiter.consider(sequence):
-			collection.add(sequence)
+		try:
+			if arbiter.consider(sequence):
+				collection.add(sequence)
+		except arbiter.Rejection as e:
+			print(f"Rejected {sequence} for reason {e}")
 
 	print(list(iter(collection)))
 
