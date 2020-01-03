@@ -38,3 +38,7 @@ class TestUtil(unittest.TestCase):
 				common.wc(sequence),
 				wc_sequence
 			)
+
+	def test_regex_search(self):
+		self.assertTrue(common.regex_search("AA", ["AAAA", "TTTT"]))
+		self.assertFalse(common.regex_search("CA", ["AAAA", "TTTT"]))

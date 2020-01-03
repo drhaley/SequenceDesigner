@@ -1,5 +1,6 @@
 import unittest
-import importlib
+
+from generator import random as generator_lib
 
 class TestRandomGenerator(unittest.TestCase):
     DOMAIN_LENGTH = 10
@@ -7,8 +8,7 @@ class TestRandomGenerator(unittest.TestCase):
     NUMBER_OF_TRIALS_PER_TEST = 10
 
     def setUp(self):
-        self.generator_lib = importlib.import_module(f"generator.random")
-        self.generator = self.generator_lib.Generator(self.DOMAIN_LENGTH)
+        self.generator = generator_lib.Generator(self.DOMAIN_LENGTH)
 
     def test_iter(self):
         iterator = iter(self.generator)
@@ -22,7 +22,7 @@ class TestRandomGenerator(unittest.TestCase):
 
     def test_three_letter_code(self):
         THREE_LETTER_CODE = "ATC"
-        three_letter_generator = self.generator_lib.Generator(
+        three_letter_generator = generator_lib.Generator(
             self.DOMAIN_LENGTH,
             alphabet = THREE_LETTER_CODE
         )
@@ -36,7 +36,7 @@ class TestRandomGenerator(unittest.TestCase):
             self.assertTrue(len(sequence) == self.DOMAIN_LENGTH)
 
     def test_alternate_domain_length(self):
-        alternate_generator = self.generator_lib.Generator(self.ALTERNATE_DOMAIN_LENGTH)
+        alternate_generator = generator_lib.Generator(self.ALTERNATE_DOMAIN_LENGTH)
         for _ in range(self.NUMBER_OF_TRIALS_PER_TEST):
             sequence = next(alternate_generator)
             self.assertTrue(len(sequence) == self.ALTERNATE_DOMAIN_LENGTH)

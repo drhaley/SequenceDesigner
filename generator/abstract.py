@@ -1,6 +1,6 @@
 import abc
 
-#TODO: add method to filter via decorator pattern
+#TODO: Decouple forbid_substring()
 
 class AbstractGenerator(abc.ABC):
     """
@@ -10,8 +10,21 @@ class AbstractGenerator(abc.ABC):
 ###################################################
     @abc.abstractmethod
     def __next__(self):
+        """
+        Produce and return a new sequence
+        """
         pass
+
+    @abc.abstractmethod
+    def forbid_substring(self, forbidden_regex):
+        """
+        Forbid the provided substring (must accept regular expressions)
+        May be helpful to use the method regex_search() from util.common
+        """
+        pass
+
 ###################################################
-    
+
     def __iter__(self):
         return self
+
