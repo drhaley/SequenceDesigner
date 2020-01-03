@@ -20,8 +20,8 @@ class TestStickyToComplementDecorator(unittest.TestCase):
 
     def test_too_low(self):
         self.oracle.affinity = self.threshold - 1.0
-        accept = self.arbiter.consider("AAAA")
-        self.assertFalse(accept)
+        with self.assertRaises(self.arbiter.Rejection):
+            self.arbiter.consider("AAAA")
 
     def test_too_high(self):
         self.oracle.affinity = self.threshold + 1.0

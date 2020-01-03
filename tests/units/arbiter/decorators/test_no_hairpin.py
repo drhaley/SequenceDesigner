@@ -21,9 +21,10 @@ class TestStickyToComplementDecorator(unittest.TestCase):
     def test_no_hairpin(self):
         self.oracle.affinity = self.threshold - 1.0
         accept = self.arbiter.consider("AAAA")
-        self.assertFalse(accept)
+        self.assertTrue(accept)
 
     def test_hairpin(self):
         self.oracle.affinity = self.threshold + 1.0
-        accept = self.arbiter.consider("AAAA")
-        self.assertTrue(accept)
+        with self.assertRaises(self.arbiter.Rejection):
+            self.arbiter.consider("AAAA")
+

@@ -1,5 +1,9 @@
 from util import common
-from arbiter.decorators.abstract import AbstractArbiterDecorator
+from arbiter.decorators.abstract import AbstractArbiterDecorator, Rejection
+
+class StickyToPairReject(Rejection):
+    def __str__(self):
+        return "sticky_pair"
 
 class Decorator(AbstractArbiterDecorator):
     """
@@ -21,19 +25,19 @@ class Decorator(AbstractArbiterDecorator):
             x_star = common.wc(x)
 
             if self._oracle.binding_affinity(x + x, a_star) >= self._threshold:
-                return False
+                raise StickyToPairReject()
             elif self._oracle.binding_affinity(a + a, x_star) >= self._threshold:
-                return False
+                raise StickyToPairReject()
 
             for y in self._collection:
                 if x != y:
                     y_star = common.wc(y)
                     if self._oracle.binding_affinity(x + y, a_star) >= self._threshold:
-                        return False
+                        raise StickyToPairReject()
                     elif self._oracle.binding_affinity(a + x, y_star) >= self._threshold:
-                        return False
+                        raise StickyToPairReject()
                     elif self._oracle.binding_affinity(x + a, y_star) >= self._threshold:
-                        return False
+                        raise StickyToPairReject()
 
         else:
             return True

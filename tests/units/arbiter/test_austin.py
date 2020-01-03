@@ -43,18 +43,18 @@ class TestAustinArbiter(unittest.TestCase):
 
     def test_austin_weak_sticky_to_self(self):
         self.oracle.lookups[("AACC", "GGTT")] = 0.0
-        accept = self.arbiter.consider("AACC")
-        self.assertFalse(accept)
+        with self.assertRaises(self.arbiter.Rejection):
+            self.arbiter.consider("AACC")
 
     def test_austin_sticky_to_other(self):
         self.oracle.lookups[("AACC", "ATCG")] = 10.0
-        accept = self.arbiter.consider("AACC")
-        self.assertFalse(accept)
+        with self.assertRaises(self.arbiter.Rejection):
+            self.arbiter.consider("AACC")
 
     def test_austin_sticky_to_pair(self):
         self.oracle.lookups[("CGAT", "AACCAACC")] = 10.0
-        accept = self.arbiter.consider("AACC")
-        self.assertFalse(accept)
+        with self.assertRaises(self.arbiter.Rejection):
+            accept = self.arbiter.consider("AACC")
 
     def test_austin_filters(self):
         #these should be filtered immediately without attempting to call the oracle
@@ -68,4 +68,5 @@ class TestAustinArbiter(unittest.TestCase):
         ]
         for sequence in forbidden_sequences:
             with self.subTest(sequence=sequence):
-                self.assertFalse(self.arbiter.consider(sequence))
+                with self.assertRaises(self.arbiter.Rejection):
+                    self.arbiter.consider(sequence)

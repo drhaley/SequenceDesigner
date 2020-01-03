@@ -1,5 +1,9 @@
 from util import common
-from arbiter.decorators.abstract import AbstractArbiterDecorator
+from arbiter.decorators.abstract import AbstractArbiterDecorator, Rejection
+
+class HeuristicReject(Rejection):
+    def __str__(self):
+        return "heuristic"
 
 class Decorator(AbstractArbiterDecorator):
     """
@@ -13,6 +17,6 @@ class Decorator(AbstractArbiterDecorator):
 
     def _check_single_condition(self, sequence):
         if common.regex_search(sequence, self._filter_list):
-            return False
+            raise HeuristicReject()
         else:
             return True

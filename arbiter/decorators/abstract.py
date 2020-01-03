@@ -2,19 +2,21 @@
 
 import abc
 
-class AbstractArbiterDecorator(abc.ABC):
+class Rejection(Exception):
+    def __str__(self):
+        return "other"  # return a (very) short description of the reason for rejection (e.g. "heuristic", "hairpin")
 
+class AbstractArbiterDecorator(abc.ABC):
     @abc.abstractmethod
     def _check_single_condition(self, sequence):
         """
         returns True if sequence is to be 'accepted'
 
-        has access to self._oracle, self._collection, self._threshold, etc.
+        otherwise throws ArbiterReject exception
+
+        has access to self._oracle, self._collection
         """
         pass
-
-
-
 
     ################################
     # the following are not abstract methods
@@ -37,6 +39,8 @@ class AbstractArbiterDecorator(abc.ABC):
         if this_condition_result == True:
             return self._parent.consider(sequence)  #passthrough
         elif this_condition_result == False:
-            return False
+            raise Rejection()
         else:
             raise AssertionError(f"received non-Bool from arbiter check condition: {this_condition_result}")
+
+    Rejection = Rejection #all arbiters should be able to directly reference this
