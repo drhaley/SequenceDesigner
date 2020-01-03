@@ -7,7 +7,7 @@ from arbiter.decorators import \
     sticky_to_complement,\
     heuristic_filter
 
-def Arbiter(oracle, collection, stickiness, single_domain_threshold, double_domain_threshold):
+def Arbiter(oracle, collection, desired_affinity, single_domain_threshold, double_domain_threshold):
     forbidden_substrings = [
 			r"[CG]{4}",
 			r"[AT]{5}",
@@ -21,7 +21,7 @@ def Arbiter(oracle, collection, stickiness, single_domain_threshold, double_doma
     arbiter = BaseArbiter(oracle, collection)
     arbiter = not_sticky_to_pairs_lite.Decorator(arbiter, double_domain_threshold)
     arbiter = not_sticky_to_others.Decorator(arbiter, single_domain_threshold)
-    arbiter = sticky_to_complement.Decorator(arbiter, stickiness)
+    arbiter = sticky_to_complement.Decorator(arbiter, desired_affinity)
     arbiter = heuristic_filter.Decorator(arbiter, forbidden_substrings)
 
     return arbiter
