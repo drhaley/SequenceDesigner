@@ -1,0 +1,5 @@
+Written by SequenceDesigner
+v1.0
+
+GACGGTTCGA
+AGCGATCAGG

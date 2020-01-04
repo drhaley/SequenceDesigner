@@ -18,3 +18,6 @@ user_settings.py
 
 #don't include oracle results file
 *.ps
+
+#do not include the sample output
+example.txt
