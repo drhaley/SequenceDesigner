@@ -7,7 +7,7 @@ class FakeOracle():
     def __init__(self):
         self.affinity = 0.0
 
-    def self_affinity(self, seq1, seq2):
+    def self_affinity(self, seq):
         return self.affinity
 
 class TestStickyToComplementDecorator(unittest.TestCase):
