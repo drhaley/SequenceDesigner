@@ -1,7 +1,7 @@
 # an example of using the designer to produce quasi-orthogonal sequences
 
 #########################################################
-from oracle.viennaCLI import Oracle
+from oracle.vienna import Oracle
 from generator.random import Generator
 from arbiter.austin import Arbiter
 from collection.set import Collection
@@ -24,7 +24,7 @@ def main():
 		double_domain_threshold = 5.0
 	)
 
-	NUMBER_OF_ITERATIONS = 100
+	NUMBER_OF_ITERATIONS = 100000
 
 	for _ in range(NUMBER_OF_ITERATIONS):
 		sequence = next(generator)

@@ -41,7 +41,7 @@ class AbstractCollection(abc.ABC):
             for sequence in self:
                 f.write(f"{sequence}\n")
 
-    def load(self, filename, append=True):
+    def load(self, filename, append=False):
         with open(filename, 'r') as f:
             f.readline() #skip first line
             version = re.match(r"v([0-9]+.[0-9]+)", f.readline()).group(1)
