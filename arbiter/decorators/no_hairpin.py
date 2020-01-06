@@ -7,16 +7,18 @@ class HairpinReject(Rejection):
 
 class Decorator(AbstractArbiterDecorator):
     """
-    Asserts that the sequence is not likely to form a hairpin
+    Asserts that the sequence is not likely to form a hairpin (and same for its complement)
     """
     def __init__(self, parent, threshold):
         super().__init__(parent)
         self._threshold = threshold
 
-    def _check_single_condition(self, sequence):
-        affinity_to_self = self._oracle.self_affinity(sequence, common.wc(sequence))
-        sticky_to_self = affinity_to_self >= self._threshold
-        if sticky_to_self:
-            raise HairpinReject()
+    def _check_single_condition(self, specified_sequence):
+        for sequence in [specified_sequence, common.wc(specified_sequence)]:
+            affinity_to_self = self._oracle.self_affinity(sequence)
+            sticky_to_self = affinity_to_self >= self._threshold
+            if sticky_to_self:
+                raise HairpinReject()
         else:
             return True
+
