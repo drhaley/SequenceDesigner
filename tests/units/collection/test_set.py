@@ -1,10 +1,10 @@
 import unittest
-import importlib
+
+from collection.set import Collection
 
 class TestSetCollection(unittest.TestCase):
     def setUp(self):
-        self.collection_lib = importlib.import_module(f"collection.set")
-        self.collection = self.collection_lib.Collection()
+        self.collection = Collection()
 
     def test_add(self):
         test_sequence = "AAA"
@@ -26,16 +26,6 @@ class TestSetCollection(unittest.TestCase):
         test_sequence = "AAAAATCG"
         self.collection.discard(test_sequence)
         self.assertFalse(test_sequence in self.collection)
-
-    def test_remove(self):
-        test_sequence = "ATCGGG"
-        self.collection.add(test_sequence)
-        self.collection.discard(test_sequence)
-        self.assertFalse(test_sequence in self.collection)
-
-    def test_remove_when_absent(self):
-        with self.assertRaises(KeyError):
-            self.collection.remove("CCCC")
 
     def test_contains_none(self):
         self.assertFalse("GGGG" in self.collection)
