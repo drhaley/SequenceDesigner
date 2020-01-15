@@ -7,14 +7,17 @@ from arbiter.austin import Arbiter
 from collection.set import Collection
 #########################################################
 
+import os
 
 def main():
 	oracle = Oracle(temperature = 40.0)
 	generator = Generator(domain_length = 10, alphabet="ATC")
 	collection = Collection()
 
+	filename = os.path.join("sequences", "example.json")
+
 	try:
-		collection.load("example.txt")
+		collection.load(filename)
 	except FileNotFoundError:
 		pass
 
@@ -37,7 +40,7 @@ def main():
 			print(f"Rejected {sequence} for reason {e}")
 
 	print(list(collection))
-	collection.save("example.txt")
+	collection.save(filename)
 
 if __name__ == "__main__":
 	main()

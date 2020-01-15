@@ -20,3 +20,9 @@ class Decorator(AbstractArbiterDecorator):
             return True
         else:
             raise NotStickyReject()
+
+    def _affinity_difference(self, seq1, seq2):
+        return \
+            self._oracle.binding_affinity(seq1, seq2) \
+                - self._oracle.self_affinity(seq1) \
+                - self._oracle.self_affinity(seq2)

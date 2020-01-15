@@ -20,6 +20,9 @@ class FakeOracle():
         else:
             raise AssertionError(f"Austin test referenced missing key in lookup table: {key}")
 
+    def self_affinity(self, seq1):
+        return 0.0
+
 class TestAustinArbiter(unittest.TestCase):
     def setUp(self):
         self.oracle = FakeOracle()
