@@ -2,6 +2,7 @@ import abc
 import re
 import json
 import datetime
+from util import common
 
 class AbstractCollection(abc.ABC):
     """
@@ -39,9 +40,10 @@ class AbstractCollection(abc.ABC):
     def save(self, filename):
         data_dict = {
             "comment": "Written by SequenceDesigner",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "timestamp": str(datetime.datetime.now()),
-            "sequences": [seq for seq in self]
+            "sequences": [seq for seq in self],
+            "complements": [common.wc(seq) for seq in self],
         }
         with open(filename, 'w') as f:
             json.dump(data_dict, f, indent=4)
