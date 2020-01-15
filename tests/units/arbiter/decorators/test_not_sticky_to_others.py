@@ -12,6 +12,9 @@ class FakeOracle():
         self.number_of_calls += 1
         return self.affinity
 
+    def self_affinity(self, seq1):
+        return 0.0
+
 class TestNotStickyToOthersDecorator(unittest.TestCase):
     def setUp(self):
         self.threshold = 8.0

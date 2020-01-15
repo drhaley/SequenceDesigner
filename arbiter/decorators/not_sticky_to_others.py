@@ -20,7 +20,13 @@ class Decorator(AbstractArbiterDecorator):
         for b in self._collection:
             b_star = common.wc(b)
             for seq1, seq2 in [(a,b), (a, b_star), (a_star, b), (a_star, b_star)]:
-                if self._oracle.binding_affinity(seq1, seq2) >= self._threshold:
+                if self._affinity_difference(seq1, seq2) >= self._threshold:
                     raise StickyToOtherReject()
         else:
             return True
+
+    def _affinity_difference(self, seq1, seq2):
+        return \
+            self._oracle.binding_affinity(seq1, seq2) \
+                - self._oracle.self_affinity(seq1) \
+                - self._oracle.self_affinity(seq2)
