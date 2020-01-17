@@ -28,10 +28,10 @@ forbidden_substrings = [
 ]
 
 def main():
-	domain_length = 8
+	domain_length = 7   #7*2 + 2 Cs on the end = 16
 	hairpin_threshold = 0.0001
-	desired_affinity_min = 8.0
-	desired_affinity_max = 1.3 * desired_affinity_min
+	desired_affinity_min = 6.0
+	desired_affinity_max = 1.5 * desired_affinity_min
 	undesirable_affinity_max = 1.5
 
 	MAX_NUMBER_OF_ITERATIONS = 500000
@@ -128,7 +128,7 @@ def good_structure_in_combined_strands(oracle, collection, hairpin_threshold):
 		return False
 
 def concatenate(seq1, seq2):
-	return ''.join([seq1,seq2[:-1]]) #skip last character to make 15 instead of 16
+	return ''.join(['C',seq1,seq2,'C'])  #heuristic: sequences must start and end in C
 
 def Arbiter(
 			oracle,
