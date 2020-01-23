@@ -12,8 +12,8 @@ DEFAULT_PARAMS_FILE = "lib/dna_mathews2004.par"
 
 class Oracle(AbstractOracle):
     def __init__(self, temperature,
-            use_duplex=True, params_filename=DEFAULT_PARAMS_FILE):
-        self._use_duplex = use_duplex
+            partition_function=False, params_filename=DEFAULT_PARAMS_FILE):
+        self._use_partition_function = partition_function
         self._params_filename = params_filename
         self.set_temperature(temperature)
         RNA.cvar.noGU = True      #legacy code did not allow GU pairs
@@ -23,12 +23,17 @@ class Oracle(AbstractOracle):
         RNA.cvar.temperature = temperature
 
     def self_affinity(self, sequence):
-        _, minimum_free_energy = RNA.fold(sequence)
-        return -minimum_free_energy
+        if self._use_partition_function:
+            folded_compound = RNA.fold_compound(sequence)
+            _, free_energy = folded_compound.pf()
+        else:
+            _, free_energy = RNA.fold(sequence)
+        return -free_energy
 
     def binding_affinity(self, sequence1, sequence2):
-        if self._use_duplex:
-            minimum_free_energy = RNA.duplexfold(sequence1, sequence2).energy
+        if self._use_partition_function:
+            folded_compound = RNA.fold_compound('&'.join([sequence1, sequence2]))
+            _, minimum_free_energy = folded_compound.pf()
         else:
-            _, minimum_free_energy = RNA.cofold('&'.join([sequence1, sequence2]))
+            minimum_free_energy = RNA.duplexfold(sequence1, sequence2).energy
         return -minimum_free_energy

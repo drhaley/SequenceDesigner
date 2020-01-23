@@ -2,6 +2,7 @@
 #approach: find two orthogonal domains and concatenate
 
 from oracle.vienna import Oracle
+from oracle.nupack import Oracle as NupackOracle
 from generator.random import Generator
 from collection.set import Collection
 
@@ -28,6 +29,18 @@ forbidden_substrings = [
 ]
 
 def main():
+	filename_suffix = random.randint(1000, 9999)
+	filename = os.path.join("sequences", f"LCM_TBN_{filename_suffix}.json")
+
+	try:
+		domains = Collection()
+		domains.load(filename)
+	except FileNotFoundError:
+		domains = generate_domains()
+
+	summarize_and_save(domains, filename)
+
+def generate_domains():
 	domain_length = 7   #7*2 + 2 Cs on the end = 16
 	hairpin_threshold = 0.0001
 	desired_affinity_min = 6.0
@@ -35,20 +48,10 @@ def main():
 	undesirable_affinity_max = 1.5
 
 	MAX_NUMBER_OF_ITERATIONS = 500000
-	INVERSE_CHANCE_TO_RESTART = 500
 
 	oracle = Oracle(temperature = 25.0)
 	generator = Generator(domain_length = domain_length, alphabet="ATC")
 	collection = Collection()
-
-	filename_suffix = random.randint(1000, 9999)
-
-	filename = os.path.join("sequences", f"LCM_TBN_{filename_suffix}.json")
-
-	try:
-		collection.load(filename)
-	except FileNotFoundError:
-		pass
 
 	arbiter = Arbiter(oracle, collection,
 		desired_affinity_min = desired_affinity_min,
@@ -64,45 +67,58 @@ def main():
 	rejection_dict = {}
 
 	for _ in range(MAX_NUMBER_OF_ITERATIONS):
-		sequence = next(generator)
+		sequence1 = next(generator)
+		sequence2 = next(generator)
 		try:
-			arbiter.consider(sequence)
-
-			collection.add(sequence)
-			print(f"Accepted {sequence}")
+			arbiter.consider(sequence1)
+			collection.add(sequence1)
+			try:
+				arbiter.consider(sequence2)
+				collection.add(sequence2)
+			except arbiter.Rejection as e:
+				collection.remove(sequence1)
+				handle_rejection(sequence2, e, rejection_dict)
 		except arbiter.Rejection as e:
-			handle_rejection(sequence, e, rejection_dict)
-			if len(collection) >= 2 and random.randint(0, INVERSE_CHANCE_TO_RESTART) == 0:
-				delete_random_sequence(collection) #restart
+			handle_rejection(sequence1, e, rejection_dict)
 
 		if len(collection) >= 3:  #3 = 2 good domains + 1 poly-T "domain"
 			if (good_structure_in_combined_strands(oracle, collection, hairpin_threshold)):
 				break
 			else:
-				delete_random_sequence(collection)
+				collection.remove(sequence1)
+				collection.remove(sequence2)
 
 	collection.remove(poly_T)
 
 	print(rejection_dict)
 	print('\n')
+
 	if len(collection) == 2:
 		concatenated_collection = Collection()
-		concatenated_collection.add(concatenate(*list(collection)))
-		concatenated_collection.save(filename)
-		print(f"Found sequence:")
-		print(list(concatenated_collection))
-		print("Complement:")
-		print([common.wc(seq) for seq in concatenated_collection])
-
+		concatenated_strand = concatenate(*list(collection))
+		concatenated_collection.add(concatenated_strand)
 	else:
-		print("terminated without finding a sequence")
+		raise AssertionError("terminated without finding a sequence")
 
-def delete_random_sequence(collection):
-	sequence_to_delete = random.choice(list(collection))
-	while sequence_to_delete == 'T' * len(sequence_to_delete): #poly-T
-		sequence_to_delete = random.choice(list(collection))
-	print(f"Removing {sequence_to_delete}")
-	collection.remove(sequence_to_delete)
+	return concatenated_collection
+
+def summarize_and_save(collection, filename):
+		nupack_oracle = NupackOracle(temperature = 25.0, partition_function = True)
+
+		concatenated_strand = next(iter(collection))
+
+		design_strands = Collection()
+		for i in range(2,6):
+			design_strands.add(i * concatenated_strand)
+			design_strands.add(i * common.wc(concatenated_strand))
+
+		print(f"Found sequence:")
+		print(list(collection))
+		print("Complement:")
+		print([common.wc(seq) for seq in collection])
+
+		print("\nComputing analysis and saving sequence...")
+		collection.save(filename, oracle=nupack_oracle, strands=design_strands)
 
 def handle_rejection(sequence, exception, rejection_dict):
 	reason = str(exception)
