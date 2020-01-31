@@ -101,12 +101,12 @@ class TestAbstractCollection(unittest.TestCase):
         self.collection.add("ATCG")
         self.collection.add("TTTT")
         certificate = self.collection.make_certificate(FakeOracle(), include_complements = False)
-        self.assertTrue(len(certificate["Self_affinities"]) == 2)
-        self.assertTrue(len(certificate["pairwise_affinities"]) == 4)
+        self.assertTrue(len(certificate.get_singles()) == 2)
+        self.assertTrue(len(certificate.get_pairs()) == 4)
 
     def test_certificate_with_complements(self):
         self.collection.add("ATCG")
         self.collection.add("TTTT")
         certificate = self.collection.make_certificate(FakeOracle(), include_complements = True)
-        self.assertTrue(len(certificate["Self_affinities"]) == 4)
-        self.assertTrue(len(certificate["pairwise_affinities"]) == 16)
+        self.assertTrue(len(certificate.get_singles()) == 4)
+        self.assertTrue(len(certificate.get_pairs()) == 16)

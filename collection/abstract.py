@@ -3,6 +3,7 @@ import re
 import json
 import datetime
 from util import common
+from util.certificate import Certificate
 
 class AbstractCollection(abc.ABC):
     """
@@ -37,23 +38,30 @@ class AbstractCollection(abc.ABC):
         else:
             raise KeyError(f"'{sequence}' is not in collection {self}")
 
-    def save(self, filename, oracle = None, strands = None):
+    def save(self, filename, oracle = None, strands = None, aliases = None):
         '''
         :param filename: filename to save as
         :param oracle: if not None, uses this Oracle to produce a domain-level analysis
         :param strands: if not None, uses this Collection (and the Oracle) to produce a strand-level analysis
+        :param aliases: if not None, uses this dictionary to name sequences (e.g. {"AATCA": "t1"}
         '''
         data_dict = {
-            "comment": "Written by SequenceDesigner",
-            "version": "1.1.0",
-            "timestamp": str(datetime.datetime.now()),
-            "Sequences": [seq for seq in self],
-            "Sequences_complement": [common.wc(seq) for seq in self],
+                "comment": "Written by SequenceDesigner",
+                "version": "1.1.1",
+                "timestamp": str(datetime.datetime.now()),
+                "Sequences": [seq for seq in self],
+                "Sequences_complement": [common.wc(seq) for seq in self],
         }
         if oracle is not None:
-            data_dict["domain_level_analysis"] = self.make_certificate(oracle)
+            domain_level_certificate = self.make_certificate(
+                    oracle, aliases = aliases
+            )
+            data_dict["domain_level_analysis"] = domain_level_certificate.export()
             if strands is not None:
-                data_dict["strand_level_analysis"] = strands.make_certificate(oracle, include_complements = False)
+                strand_level_certificate = self.make_certificate(
+                        oracle, aliases=aliases, include_complements=False
+                )
+                data_dict["strand_level_analysis"] = strand_level_certificate.export()
         with open(filename, 'w') as f:
             json.dump(data_dict, f, indent = 4, sort_keys = True)
 
@@ -80,19 +88,20 @@ class AbstractCollection(abc.ABC):
         for sequence in sequences:
             self.discard(sequence)
 
-    def make_certificate(self, oracle, include_complements = True):
+    def make_certificate(self, oracle, include_complements = True, aliases = None):
         if include_complements:
             all_sequences = list(self) + [common.wc(seq) for seq in self]
         else:
             all_sequences = list(self)
-        self_affinities = {}
-        binding_affinities = {}
+
+        cert = Certificate()
+        if aliases:
+            for seq, alias in aliases.items():
+                cert.define_alias(seq, alias)
+
         for sequence1 in all_sequences:
-            self_affinities[sequence1] = oracle.self_affinity(sequence1)
+            cert.add_single(sequence1, oracle.self_affinity(sequence1))
             for sequence2 in all_sequences:
-                binding_affinities[', '.join([sequence1, sequence2])] = oracle.binding_affinity(sequence1, sequence2)
-        certificate = {
-            'Self_affinities': self_affinities,
-            'pairwise_affinities': binding_affinities,
-        }
-        return certificate
+                cert.add_pair(sequence1, sequence2, oracle.binding_affinity(sequence1, sequence2))
+
+        return cert
