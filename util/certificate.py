@@ -38,5 +38,8 @@ class Certificate():
     def export(self):
         return {
             "Self_affinities": self.get_singles(),
-            "pairwise_affinities": self.get_pairs(),
+            "pairwise_affinities": {
+                f"({seq1}, {seq2})": energy
+                    for (seq1, seq2), energy in self.get_pairs().items()
+            }
         }
