@@ -53,7 +53,7 @@ class AbstractCollection(abc.ABC):
                 "Sequences_complement": [common.wc(seq) for seq in self],
         }
         if aliases:
-            data_dict["aliases"] = aliases
+            data_dict["aliases"] = {alias:sequence for sequence, alias in aliases.items()}  #easier to read in this order
         if oracle is not None:
             domain_level_certificate = self.make_certificate(
                     oracle, aliases = aliases
