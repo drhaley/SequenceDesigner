@@ -47,7 +47,7 @@ class AbstractCollection(abc.ABC):
         '''
         data_dict = {
                 "comment": "Written by SequenceDesigner",
-                "version": "1.1.1",
+                "version": "1.1.2",
                 "timestamp": str(datetime.datetime.now()),
                 "Sequences": [seq for seq in self],
                 "Sequences_complement": [common.wc(seq) for seq in self],
