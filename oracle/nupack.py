@@ -5,8 +5,11 @@ from oracle.abstract import AbstractOracle
 
 
 class Oracle(AbstractOracle):
-    def __init__(self, temperature):
+    def __init__(self, temperature, partition_function=False, sodium = 0.05, magnesium = 0.125):
+        self._use_partition_function = partition_function
         self.set_temperature(temperature)
+        self._sodium = sodium
+        self._magnesium = magnesium
 
     def set_temperature(self, temperature):
         self._temperature = temperature
@@ -26,7 +29,15 @@ class Oracle(AbstractOracle):
     def _pfunc(self, *sequences):
         user_input = str(len(sequences)) + '\n' + '\n'.join(sequences) + '\n' + ' '.join(map(str,list(range(1,len(sequences)+1))))
 
-        nupack_process = self._open_subprocess(['pfunc','-T',str(self._temperature),'-multi','-material','dna'])
+        args = [
+                'pfunc','-T',str(self._temperature),'-multi','-material','dna',
+                '-sodium', str(self._sodium),
+                '-magnesium', str(self._magnesium)
+        ]
+        if self._use_partition_function:
+            args.append("-p")
+
+        nupack_process = self._open_subprocess(args)
 
         try:
             output = nupack_process.communicate(user_input.encode('utf-8'))[0]
