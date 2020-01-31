@@ -18,9 +18,6 @@ class Oracle(AbstractOracle):
         self._use_partition_function = partition_function
         self.set_temperature(temperature)
 
-        if partition_function:
-            raise AssertionError("partition function in vienna CLI is unimplemented")
-
     def set_temperature(self, temperature):
         self._temperature = temperature
 
@@ -35,9 +32,9 @@ class Oracle(AbstractOracle):
     def _subprocess_self_binding_energy(self, sequence):
         user_input = sequence + self._VIENNA_QUIT_STRING
         if self._use_partition_function:
-            raise AssertionError("partition function in vienna CLI self affinity is unimplemented")
+            params = '-p'
         else:
-            params = '-p'  #TODO: why does this produce the mfe instead of the partition energy?
+            params = None
         return self._get_energy_from_subprocess('RNAfold', params, user_input)
 
     def _subprocess_binding_energy(self, sequence1, sequence2):
@@ -50,7 +47,7 @@ class Oracle(AbstractOracle):
     
         if self._use_partition_function:
             executable_name = 'RNAcofold'
-            additional_parameters = '-p0'
+            additional_parameters = '-p0'  #'-p0' is more efficient than '-p'
             user_input = '&'.join([sequence1,sequence2]) + self._VIENNA_QUIT_STRING
         else:
             executable_name = 'RNAduplex'
@@ -59,64 +56,78 @@ class Oracle(AbstractOracle):
 
         return self._get_energy_from_subprocess(executable_name, additional_parameters, user_input)
 
-    def _open_subprocess(self, arg_list):
+    def _open_subprocess(self, command_line_string_list):
         return subprocess.Popen(
-            arg_list,
+            command_line_string_list,
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-        )  
+        )
         
     def _get_energy_from_subprocess(self, executable_name, additional_parameters, user_input):
-        vienna_process = self._open_subprocess(
-            [
+        command_line_string_list = [
                 executable_name,
                 '-P', self._params_filename,
                 '-T', str(self._temperature),
                 '--noGU',
                 '--noconv',
-                additional_parameters,
-            ]
-        )
+        ]
+        if additional_parameters:
+            command_line_string_list.append(additional_parameters)
 
-        try: 
+        vienna_process = self._open_subprocess(command_line_string_list)
+
+        energy_regex = self._get_energy_regex()
+
+        try:
             output, stderr = vienna_process.communicate(user_input.encode('utf-8'))
             output = output.decode('utf-8')
             stderr = stderr.decode('utf-8')
         except BaseException as error:
             vienna_process.kill()
             raise error
-        
-        if stderr.strip() != '': # an error from RNAduplex
+
+        if stderr.strip() != '': # an error from RNAduplex (or RNAcofold)
             if stderr.split('\n')[0] not in self._IGNORED_ERRORS:
-                print('Warning or error from RNAduplex: ', stderr)
-                raise ValueError('RNAduplex error')
+                print('Warning or error from RNAduplex/RNAcofold: ', stderr)
+                raise ValueError('RNAduplex/RNAcofold error')
 
-        FLOATING_POINT_NUMBER_REGEX = r"\s*([-+]?[0-9]*\.?[0-9]+)\s*"
+        search_result = re.search(energy_regex, output)
 
-        PARENS_NUMBER_REGEX = "".join([
-            r"\(",
-            FLOATING_POINT_NUMBER_REGEX,
-            r"\)"
-        ])
-
-        ENSEMBLE_ENERGY_REGEX = "".join([
-            r"free energy of ensemble =",
-            FLOATING_POINT_NUMBER_REGEX,
-            r"kcal\/mol"
-        ])
-
-        MFE_ENERGY_REGEX = "".join([
-            r"minimum free energy =",
-            FLOATING_POINT_NUMBER_REGEX,
-            r"kcal\/mol"
-        ])
-
-        search_result = re.search(f"{ENSEMBLE_ENERGY_REGEX}", output)
-
-        if search_result is None:
-            search_result = re.search(f"{MFE_ENERGY_REGEX}|{PARENS_NUMBER_REGEX}", output)
-
-        energy = search_result.group(1)
-        if energy is None:
-            energy = search_result.group(2)
+        if search_result:
+            energy = search_result.group(1)
+            if energy is None:  #try the second recognition string
+                energy = search_result.group(2)
+        else:
+            raise AssertionError(f"Could not locate energy in ViennaRNA output:\n{output}\n")
 
         return float(energy)
+
+    def _get_energy_regex(self):
+        FLOATING_POINT_NUMBER_REGEX = r"\s*([-+]?[0-9]*\.?[0-9]+)\s*"
+
+        if self._use_partition_function:
+            ENSEMBLE_ENERGY_REGEX = "".join([
+                r"free energy of ensemble =",
+                FLOATING_POINT_NUMBER_REGEX,
+                r"kcal\/mol"
+            ])
+            BRACKETS_NUMBER_REGEX = "".join([
+                r"\[",
+                FLOATING_POINT_NUMBER_REGEX,
+                r"\]"
+            ])
+
+            energy_regex = f"{ENSEMBLE_ENERGY_REGEX}|{BRACKETS_NUMBER_REGEX}"
+        else:
+            MFE_REGEX = "".join([
+                r"minimum free energy =",
+                FLOATING_POINT_NUMBER_REGEX,
+                r"kcal\/mol"
+            ])
+            PARENS_NUMBER_REGEX = "".join([
+                r"\(",
+                FLOATING_POINT_NUMBER_REGEX,
+                r"\)"
+            ])
+            energy_regex = f"{MFE_REGEX}|{PARENS_NUMBER_REGEX}"
+
+        return energy_regex

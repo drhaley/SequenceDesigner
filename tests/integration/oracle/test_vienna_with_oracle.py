@@ -9,7 +9,7 @@ class TestViennaWithOracle(unittest.TestCase):
     TEMPERATURE = 25.0
 
     def setUp(self):
-        self.mfe_oracle = vienna.Oracle(self.TEMPERATURE)
+        self.mfe_oracle = vienna.Oracle(self.TEMPERATURE, partition_function = False)
         self.partition_oracle = vienna.Oracle(self.TEMPERATURE, partition_function = True)
 
     def test_low_mfe_self_affinity(self):
@@ -34,12 +34,12 @@ class TestViennaWithOracle(unittest.TestCase):
 
     def test_low_partition_binding_affinity(self):
         affinity = self.partition_oracle.binding_affinity("TCTACCTCTTTCCCACCTCC", "CAAACAACACAATACACTCA")
-        self.assertEqual(fixed_place_round(3.5035390853881836), fixed_place_round(affinity))  # value by regression
+        self.assertEqual(fixed_place_round(2.825085401535034), fixed_place_round(affinity))  # value by regression
 
     def test_high_mfe_binding_affinity(self):
         affinity = self.mfe_oracle.binding_affinity("CCTCTCTTACCATAAC", "GAGAGG")
         self.assertEqual(fixed_place_round(8.329999923706055), fixed_place_round(affinity))  # value by regression
 
     def test_high_partition_binding_affinity(self):
-        affinity = self.mfe_oracle.binding_affinity("CCTCTCTTACCATAAC", "GAGAGG")
-        self.assertEqual(fixed_place_round(8.329999923706055), fixed_place_round(affinity))  # value by regression
+        affinity = self.partition_oracle.binding_affinity("CCTCTCTTACCATAAC", "GAGAGG")
+        self.assertEqual(fixed_place_round(8.54045581817627), fixed_place_round(affinity))  # value by regression

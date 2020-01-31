@@ -32,8 +32,8 @@ class Oracle(AbstractOracle):
 
     def binding_affinity(self, sequence1, sequence2):
         if self._use_partition_function:
-            folded_compound = RNA.fold_compound('&'.join([sequence1, sequence2]))
-            _, minimum_free_energy = folded_compound.pf()
+            energy_list = RNA.co_pf_fold('&'.join([sequence1, sequence2]))
+            free_energy = energy_list[-1]  #ensemble energy is the last in a list of structure-specific energies
         else:
-            minimum_free_energy = RNA.duplexfold(sequence1, sequence2).energy
-        return -minimum_free_energy
+            free_energy = RNA.duplexfold(sequence1, sequence2).energy
+        return -free_energy
