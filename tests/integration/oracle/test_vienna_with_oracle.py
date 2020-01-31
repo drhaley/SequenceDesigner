@@ -2,7 +2,7 @@ import unittest
 
 from oracle import vienna
 
-def fixed_place_round(number, DECIMAL_PLACES = 20):
+def fixed_place_round(number, DECIMAL_PLACES = 6):
     return round(number, DECIMAL_PLACES)
 
 class TestViennaWithOracle(unittest.TestCase):
