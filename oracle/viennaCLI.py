@@ -11,12 +11,15 @@ class Oracle(AbstractOracle):
     ]
 
     def __init__(self, temperature, 
-            params_filename=None, use_duplex=True):
+            partition_function = False, params_filename = None):
         if not params_filename:
             params_filename = self._DEFAULT_PARAMS_FILENAME
         self._params_filename = params_filename
-        self._use_duplex = use_duplex
+        self._use_partition_function = partition_function
         self.set_temperature(temperature)
+
+        if partition_function:
+            raise AssertionError("partition function in vienna CLI is unimplemented")
 
     def set_temperature(self, temperature):
         self._temperature = temperature
@@ -31,7 +34,11 @@ class Oracle(AbstractOracle):
     
     def _subprocess_self_binding_energy(self, sequence):
         user_input = sequence + self._VIENNA_QUIT_STRING
-        return self._get_energy_from_subprocess('RNAfold', '-p', user_input)
+        if self._use_partition_function:
+            raise AssertionError("partition function in vienna CLI self affinity is unimplemented")
+        else:
+            params = '-p'  #TODO: why does this produce the mfe instead of the partition energy?
+        return self._get_energy_from_subprocess('RNAfold', params, user_input)
 
     def _subprocess_binding_energy(self, sequence1, sequence2):
         """Calls RNAduplex or RNAcofold on a pair of strings using 'ATCG'"""
@@ -41,14 +48,14 @@ class Oracle(AbstractOracle):
         #  e.g. any extra whitespace characters causes RNAduplex to
         #  default to RNA parameter set without warning the user!
     
-        if self._use_duplex:
-            executable_name = 'RNAduplex'
-            additional_parameters = ''
-            user_input = '\n'.join([sequence1,sequence2]) + self._VIENNA_QUIT_STRING
-        else:
+        if self._use_partition_function:
             executable_name = 'RNAcofold'
             additional_parameters = '-p0'
             user_input = '&'.join([sequence1,sequence2]) + self._VIENNA_QUIT_STRING
+        else:
+            executable_name = 'RNAduplex'
+            additional_parameters = ''
+            user_input = '\n'.join([sequence1,sequence2]) + self._VIENNA_QUIT_STRING
 
         return self._get_energy_from_subprocess(executable_name, additional_parameters, user_input)
 
@@ -62,13 +69,13 @@ class Oracle(AbstractOracle):
         vienna_process = self._open_subprocess(
             [
                 executable_name,
-                additional_parameters,
                 '-P', self._params_filename,
                 '-T', str(self._temperature),
                 '--noGU',
                 '--noconv',
+                additional_parameters,
             ]
-        )  
+        )
 
         try: 
             output, stderr = vienna_process.communicate(user_input.encode('utf-8'))
@@ -97,7 +104,16 @@ class Oracle(AbstractOracle):
             r"kcal\/mol"
         ])
 
-        search_result = re.search(f"{ENSEMBLE_ENERGY_REGEX}|{PARENS_NUMBER_REGEX}", output)
+        MFE_ENERGY_REGEX = "".join([
+            r"minimum free energy =",
+            FLOATING_POINT_NUMBER_REGEX,
+            r"kcal\/mol"
+        ])
+
+        search_result = re.search(f"{ENSEMBLE_ENERGY_REGEX}", output)
+
+        if search_result is None:
+            search_result = re.search(f"{MFE_ENERGY_REGEX}|{PARENS_NUMBER_REGEX}", output)
 
         energy = search_result.group(1)
         if energy is None:
