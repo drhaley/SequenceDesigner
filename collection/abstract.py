@@ -60,7 +60,7 @@ class AbstractCollection(abc.ABC):
             )
             data_dict["domain_level_analysis"] = domain_level_certificate.export()
             if strands is not None:
-                strand_level_certificate = self.make_certificate(
+                strand_level_certificate = strands.make_certificate(
                         oracle, aliases=aliases, include_complements=False
                 )
                 data_dict["strand_level_analysis"] = strand_level_certificate.export()
