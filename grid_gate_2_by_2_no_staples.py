@@ -37,12 +37,13 @@ forbidden_strand_substrings = [
 
 # thresholds for the long domains against themselves
 hairpin_threshold = 0.05
-desired_affinity_min = 10.0
-desired_affinity_max = 1.25 * desired_affinity_min
-undesirable_affinity_max = 7.5
+desired_affinity_min = 9.5
+desired_affinity_max = 1.1 * desired_affinity_min
+undesirable_affinity_max = 6.5
 
 # threshold for the strands' self structure
-strand_hairpin_threshold = 2.0
+strand_hairpin_threshold = 1.0
+scaffold_hairpin_threshold = 3.0
 
 def main():
 	filename_suffix = random.randint(1000, 9999)
@@ -50,16 +51,19 @@ def main():
 
 	accept = False
 	while(not accept):
+		print("Generating domains")
 		domains = generate_internal_domains()
+		print("Assembling strands")
 		strands, aliases, accept = assemble_strands(domains)
 
+	print(f"Saving design as {filename}")
 	save_to_file(filename, domains, strands, aliases)
 
 def generate_internal_domains():
 	MAX_NUMBER_OF_ITERATIONS = 100000
 
-	sizes = {"half": 8, "endcap": 10}
-	number_of_each_size = {8: 8, 10:2}
+	sizes = {"half domain": 8}
+	number_of_each_size = {8: 8}
 
 	oracle = Oracle(temperature = 25.0, partition_function = False)  #this needs to be fast, so just look at mfe
 	generators = {
@@ -112,8 +116,12 @@ def assemble_strands(sequences):
 	oracle = Oracle(temperature = 25.0, partition_function = True)  #here we check for secondary structure; need pf
 
 	arbiter = BaseArbiter(oracle, Collection())
-	hairpin_arbiter = no_hairpin.Decorator(arbiter, strand_hairpin_threshold)
 	heuristic_arbiter = heuristic_filter.Decorator(arbiter, forbidden_strand_substrings)
+
+	strand_arbiter = no_hairpin.Decorator(heuristic_arbiter, strand_hairpin_threshold)
+
+	scaffold_arbiter = no_hairpin.Decorator(heuristic_arbiter, scaffold_hairpin_threshold)
+
 
 	namer = NameGenerator()
 
@@ -129,28 +137,28 @@ def assemble_strands(sequences):
 	reverse_aliases = {alias: sequence for sequence, alias in aliases.items()}
 	design_strands = Collection()
 
+	T_loopout = "T"*8
+
 	#concatenate the strands
-	V1 = f"{reverse_aliases['b']}{reverse_aliases['a']}{reverse_aliases['h']}{reverse_aliases['g']}"
-	V2 = f"{reverse_aliases['f']}{reverse_aliases['e']}{reverse_aliases['d']}{reverse_aliases['c']}"
+	V1 = f"{reverse_aliases['b']}{reverse_aliases['a']}{reverse_aliases['e']}{reverse_aliases['f']}"
+	V2 = f"{reverse_aliases['g']}{reverse_aliases['h']}{reverse_aliases['d']}{reverse_aliases['c']}"
 	H1 = f"{reverse_aliases['d']}{reverse_aliases['c']}{reverse_aliases['b']}{reverse_aliases['a']}"
-	H2 = f"{reverse_aliases['h']}{reverse_aliases['g']}{reverse_aliases['f']}{reverse_aliases['e']}"
+	H2 = f"{reverse_aliases['e']}{reverse_aliases['f']}{reverse_aliases['g']}{reverse_aliases['h']}"
+
+	# simplified design schematic:
+	# abcd
+	# efgh
+
 	Scaffold = \
-			  f"{reverse_aliases['f*']}{reverse_aliases['g*']}{reverse_aliases['h*']}" \
-			+ f"{reverse_aliases['l*']}" \
-			+ f"{reverse_aliases['a*']}{reverse_aliases['b*']}{reverse_aliases['c*']}{reverse_aliases['d*']}" \
-			+ f"{reverse_aliases['r*']}" \
-			+ f"{reverse_aliases['e*']}"
+			  f"{reverse_aliases['g*']}{T_loopout}" \
+			+ f"{reverse_aliases['f*']}{reverse_aliases['e*']}{T_loopout}" \
+			+ f"{reverse_aliases['a*']}{reverse_aliases['b*']}{T_loopout}" \
+			+ f"{reverse_aliases['c*']}{reverse_aliases['d*']}{T_loopout}" \
+			+ f"{reverse_aliases['h*']}"
 
 	Catalyst = \
 			  f"{reverse_aliases['d']}{reverse_aliases['c']}" \
-			+ f"{reverse_aliases['b']}{reverse_aliases['a']}{reverse_aliases['h']}{reverse_aliases['g']}"
-
-	H1_th = H1 + reverse_aliases['l'][:5]
-	H2_th = reverse_aliases['l'][-5:] + H2
-	Catalyst_th = reverse_aliases['r'][-5:] + Catalyst
-
-	for strand in [V1, V2, H1, H2, Catalyst, H1_th, H2_th, Catalyst_th]:
-		design_strands.add(strand)
+			+ f"{reverse_aliases['b']}{reverse_aliases['a']}{reverse_aliases['e']}{reverse_aliases['f']}"
 
 	aliases[V1] = "V1"
 	aliases[V2] = "V2"
@@ -158,23 +166,21 @@ def assemble_strands(sequences):
 	aliases[H2] = "H2"
 	aliases[Scaffold] = "Scaffold"
 	aliases[Catalyst] = "Catalyst"
-	aliases[H1_th] = "H1_th"
-	aliases[H2_th] = "H2_th"
-	aliases[Catalyst_th] = "Catalyst_th"
 
-	for strand in design_strands:
+	for strand in [V1, V2, H1, H2, Catalyst]:
 		try:
-			hairpin_arbiter.consider(strand)
-		except hairpin_arbiter.Rejection as e:
+			strand_arbiter.consider(strand)
+			design_strands.add(strand)
+		except strand_arbiter.Rejection as e:
 			handle_rejection(aliases[strand], e, {}, verbose = True)
 			accept = False
 			break
 	else:
-		design_strands.add(Scaffold)
-		for strand in design_strands:
+		for strand in [Scaffold]:
 			try:
-				heuristic_arbiter.consider(strand)
-			except heuristic_arbiter.Rejection as e:
+				scaffold_arbiter.consider(strand)
+				design_strands.add(strand)
+			except scaffold_arbiter.Rejection as e:
 				handle_rejection(aliases[strand], e, {}, verbose = True)
 				accept = False
 				break
@@ -220,18 +226,13 @@ def Arbiter(
 
 class NameGenerator():
 	def __init__(self):
-		self._half_domain_index = 0
-		self._endcap_index = 0
-		self._half_domain_names = "abcdefgh"
-		self._endcap_names = "lr"
+		self._index = 0
+		self._names = "abcdefgh"
 
 	def assign(self, sequence):
 		if len(sequence) == 8:
-			name = self._half_domain_names[self._half_domain_index]
-			self._half_domain_index += 1
-		elif len(sequence) == 10:
-			name = self._endcap_names[self._endcap_index]
-			self._endcap_index += 1
+			name = self._names[self._index]
+			self._index += 1
 		else:
 			name = None
 		return name
