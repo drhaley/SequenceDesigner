@@ -16,7 +16,6 @@ from arbiter.decorators import \
 
 import os
 import random
-import string
 from util import common
 
 forbidden_domain_substrings = [
@@ -37,29 +36,44 @@ forbidden_strand_substrings = [
 
 # thresholds for the long domains against themselves
 hairpin_threshold = 0.05
-desired_affinity_min = 12.0
-desired_affinity_max = 1.25 * desired_affinity_min
-undesirable_affinity_max = 8.0
+desired_affinity_min = 13.0
+desired_affinity_max = 1.1 * desired_affinity_min
+undesirable_affinity_max = 5.5
+
+# thresholds for the staple domains against themselves
+staple_hairpin_threshold = 0.05
+staple_affinity_min = 20.0
+staple_affinity_max = 1.25 * staple_affinity_min
+staple_to_all_affinity_max = 10.0
+
+# staples should not be sticky to the internal domains
+staple_to_internal_affinity_max = 7.5
 
 # threshold for the strands' self structure
-strand_hairpin_threshold = 2.0
+strand_hairpin_threshold = 1.0
+scaffold_hairpin_threshold = 3.0
 
 def main():
 	filename_suffix = random.randint(1000, 9999)
-	filename = os.path.join("sequences", f"GG_size_2_w_staples_{filename_suffix}.json")
+	filename = os.path.join("sequences", f"GG_stapled_{filename_suffix}.json")
 
 	accept = False
 	while(not accept):
+		print("Generating internal domains")
 		domains = generate_internal_domains()
+		print("Generating staple domains")
+		domains = additionally_generate_staple_domains(domains)
+		print("Assembling strands")
 		strands, aliases, accept = assemble_strands(domains)
 
+	print(f"Saving design as {filename}")
 	save_to_file(filename, domains, strands, aliases)
 
 def generate_internal_domains():
 	MAX_NUMBER_OF_ITERATIONS = 100000
 
 	sizes = {"long1": 10, "long2": 11}
-	number_of_each_size = {10: 6, 11: 6}
+	number_of_each_size = {10: 2, 11: 2}
 
 	oracle = Oracle(temperature = 25.0, partition_function = False)  #this needs to be fast, so just look at mfe
 	generators = {
@@ -96,7 +110,7 @@ def generate_internal_domains():
 				collection.remove(random.choice(sequences_of_certain_size))
 
 		if len(collection) == 1 + sum(number_of_each_size.values()):  # +1 for poly-T
-			break   #move to second phase and try to assemble these strands
+			break   #move to next phase
 	else:
 		print(rejection_dict)
 		raise AssertionError(f"Did not find sequences after {MAX_NUMBER_OF_ITERATIONS} iterations")
@@ -108,12 +122,76 @@ def generate_internal_domains():
 
 	return collection
 
+def additionally_generate_staple_domains(internal_domains):
+	MAX_NUMBER_OF_ITERATIONS = 100000
+
+	sizes = {"half staple": 16}
+	number_of_each_size = {16: 4}
+
+	oracle = Oracle(temperature = 25.0, partition_function = False)  #this needs to be fast, so just look at mfe
+	generators = {
+			size: Generator(domain_length = size, alphabet = "ATC")
+				for size in sizes.values()
+	}
+	all_domains = Collection()
+	for seq in internal_domains:
+		all_domains.add(seq)
+
+	staple_to_internal_arbiter = Arbiter(oracle, internal_domains,
+			desired_affinity_min = staple_affinity_min,
+			desired_affinity_max = staple_affinity_max,
+			hairpin_threshold = staple_hairpin_threshold,
+			undesirable_single_domain_affinity = staple_to_internal_affinity_max,
+			undesirable_middle_domain_affinity = staple_to_internal_affinity_max,
+	)
+	staple_to_all_arbiter = Arbiter(oracle, all_domains,
+			desired_affinity_min = staple_affinity_min,
+			desired_affinity_max = staple_affinity_max,
+			hairpin_threshold = staple_hairpin_threshold,
+			undesirable_single_domain_affinity = staple_to_all_affinity_max,
+			undesirable_middle_domain_affinity = staple_to_all_affinity_max,
+	)
+
+	short_poly_T = "T"*11
+	internal_domains.add(short_poly_T)       #we want domains to be orthogonal to poly-T segments
+	long_poly_T = "T"*max(sizes.values())
+	all_domains.add(long_poly_T)  # we want domains to be orthogonal to poly-T segments
+
+	rejection_dict = {}
+
+	for _ in range(MAX_NUMBER_OF_ITERATIONS):
+		size = random.choice(list(sizes.values()))
+		sequence = next(generators[size])
+		try:
+			staple_to_internal_arbiter.consider(sequence)
+			staple_to_all_arbiter.consider(sequence)
+			all_domains.add(sequence)
+		except (staple_to_internal_arbiter.Rejection, staple_to_all_arbiter.Rejection) as e:
+			handle_rejection(sequence, e, rejection_dict)
+
+		if len(all_domains) == len(internal_domains) + sum(number_of_each_size.values()):
+			break   #move to next phase
+	else:
+		print(rejection_dict)
+		raise AssertionError(f"Did not find sequences after {MAX_NUMBER_OF_ITERATIONS} iterations")
+
+	internal_domains.remove(short_poly_T)
+	all_domains.remove(long_poly_T)
+
+	print(rejection_dict)
+	print('\n')
+
+	return all_domains
+
 def assemble_strands(sequences):
 	oracle = Oracle(temperature = 25.0, partition_function = True)  #here we check for secondary structure; need pf
 
 	arbiter = BaseArbiter(oracle, Collection())
-	hairpin_arbiter = no_hairpin.Decorator(arbiter, strand_hairpin_threshold)
 	heuristic_arbiter = heuristic_filter.Decorator(arbiter, forbidden_strand_substrings)
+
+	strand_arbiter = no_hairpin.Decorator(heuristic_arbiter, strand_hairpin_threshold)
+
+	scaffold_arbiter = no_hairpin.Decorator(heuristic_arbiter, scaffold_hairpin_threshold)
 
 	namer = NameGenerator()
 
@@ -130,31 +208,26 @@ def assemble_strands(sequences):
 	design_strands = Collection()
 
 	#concatenate the strands
-	S_left = f"{reverse_aliases['b'][5:]}{reverse_aliases['a']}{reverse_aliases['l']}{reverse_aliases['k'][:-5]}"
-	V1 = f"{reverse_aliases['c']}{reverse_aliases['j']}"
-	V2 = f"{reverse_aliases['i']}{reverse_aliases['d']}"
-	S_right = f"{reverse_aliases['h']}{reverse_aliases['g']}{reverse_aliases['f']}{reverse_aliases['e'][:-5]}"
-	H1 = f"{reverse_aliases['d']}{reverse_aliases['c']}"
-	H2 = f"{reverse_aliases['j']}{reverse_aliases['i']}"
+
+	# simplified design schematic:
+	# abcd
+	# efgh
+
+	S_left = f"{reverse_aliases['e']}{reverse_aliases['a']}"
+	V1 = f"{reverse_aliases['b']}{reverse_aliases['f']}"
+	V2 = f"{reverse_aliases['g']}{reverse_aliases['c']}"
+	S_right = f"{reverse_aliases['d']}{reverse_aliases['h']}"
+	H1 = f"{reverse_aliases['c']}{reverse_aliases['b']}"
+	H2 = f"{reverse_aliases['f']}{reverse_aliases['g']}"
 	Scaffold_short = \
-			  f"{reverse_aliases['a*']}{reverse_aliases['b*']}{reverse_aliases['c*']}{reverse_aliases['d*']}" \
-			+ f"{reverse_aliases['e*'][:5]}TTTTT" \
-			+ f"{reverse_aliases['i*']}{reverse_aliases['j*']}{reverse_aliases['k*']}{reverse_aliases['l*']}"
-	Scaffold_long = \
 			  f"{reverse_aliases['a*']}{reverse_aliases['b*']}{reverse_aliases['c*']}" \
-			+ f"{reverse_aliases['d*']}{reverse_aliases['e*']}{reverse_aliases['f*']}" \
-			+ ("T"*10) \
-			+ f"{reverse_aliases['g*']}{reverse_aliases['h*']}{reverse_aliases['i*']}" \
-			+ f"{reverse_aliases['j*']}{reverse_aliases['k*']}{reverse_aliases['l*']}"
+			+ f"{'T'*8}" \
+			+ f"{reverse_aliases['g*']}{reverse_aliases['f*']}{reverse_aliases['e*']}"
+	Scaffold_long = \
+			  f"{reverse_aliases['a*']}{reverse_aliases['b*']}{reverse_aliases['c*']}{reverse_aliases['d*']}" \
+			+ f"{reverse_aliases['h*']}{reverse_aliases['g*']}{reverse_aliases['f*']}{reverse_aliases['e*']}"
 
-	Catalyst = f"{reverse_aliases['d']}{reverse_aliases['c']}{reverse_aliases['j']}"
-
-	H1_th = H1 + reverse_aliases['b'][:5]
-	H2_th = reverse_aliases['k'][-5:] + H2
-	Catalyst_th = reverse_aliases['e'][-5:] + Catalyst
-
-	for strand in [S_left, V1, V2, S_right, H1, H2, Catalyst, H1_th, H2_th, Catalyst_th]:
-		design_strands.add(strand)
+	Catalyst = f"{reverse_aliases['c']}{reverse_aliases['b']}{reverse_aliases['f']}"
 
 	aliases[S_left] = "S_left"
 	aliases[V1] = "V1"
@@ -165,24 +238,21 @@ def assemble_strands(sequences):
 	aliases[Scaffold_long] = "Scaffold_long"
 	aliases[Scaffold_short] = "Scaffold_short"
 	aliases[Catalyst] = "Catalyst"
-	aliases[H1_th] = "H1_th"
-	aliases[H2_th] = "H2_th"
-	aliases[Catalyst_th] = "Catalyst_th"
 
-	for strand in design_strands:
+	for strand in [S_left, V1, V2, S_right, H1, H2, Catalyst]:
 		try:
-			hairpin_arbiter.consider(strand)
-		except hairpin_arbiter.Rejection as e:
+			strand_arbiter.consider(strand)
+			design_strands.add(strand)
+		except strand_arbiter.Rejection as e:
 			handle_rejection(aliases[strand], e, {}, verbose = True)
 			accept = False
 			break
 	else:
-		design_strands.add(Scaffold_short)
-		design_strands.add(Scaffold_long)
-		for strand in design_strands:
+		for strand in [Scaffold_long, Scaffold_short]:
 			try:
-				heuristic_arbiter.consider(strand)
-			except heuristic_arbiter.Rejection as e:
+				scaffold_arbiter.consider(strand)
+				design_strands.add(strand)
+			except scaffold_arbiter.Rejection as e:
 				handle_rejection(aliases[strand], e, {}, verbose = True)
 				accept = False
 				break
@@ -228,17 +298,23 @@ def Arbiter(
 
 class NameGenerator():
 	def __init__(self):
-		self._even_index = 0
-		self._odd_index = 1
-		self._names = string.ascii_lowercase
+		self._short_index = 0
+		self._long_index = 0
+		self._staple_index = 0
+		self._short_names = "cf"
+		self._long_names = "bg"
+		self._staple_names = "adeh"
 
 	def assign(self, sequence):
 		if len(sequence) == 10:
-			name = self._names[self._even_index]
-			self._even_index += 2
+			name = self._short_names[self._short_index]
+			self._short_index += 1
 		elif len(sequence) == 11:
-			name = self._names[self._odd_index]
-			self._odd_index += 2
+			name = self._long_names[self._long_index]
+			self._long_index += 1
+		elif len(sequence) == 16:
+			name = self._staple_names[self._staple_index]
+			self._staple_index += 1
 		else:
 			name = None
 		return name

@@ -16,7 +16,6 @@ from arbiter.decorators import \
 
 import os
 import random
-import string
 from util import common
 
 forbidden_domain_substrings = [
@@ -35,7 +34,7 @@ forbidden_strand_substrings = [
 	r"AAAA",
 ]
 
-# thresholds for the long domains against themselves
+# thresholds for the half domains against themselves
 hairpin_threshold = 0.05
 desired_affinity_min = 9.5
 desired_affinity_max = 1.1 * desired_affinity_min
