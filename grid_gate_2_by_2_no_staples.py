@@ -159,10 +159,10 @@ def assemble_strands(sequences):
 			  f"{reverse_aliases['d']}{reverse_aliases['c']}" \
 			+ f"{reverse_aliases['b']}{reverse_aliases['a']}{reverse_aliases['e']}{reverse_aliases['f']}"
 
-	aliases[V1] = "V1"
-	aliases[V2] = "V2"
-	aliases[H1] = "H1"
-	aliases[H2] = "H2"
+	aliases[V1] = "V_left"
+	aliases[V2] = "V_right"
+	aliases[H1] = "H_top"
+	aliases[H2] = "H_bottom"
 	aliases[Scaffold] = "Scaffold"
 	aliases[Catalyst] = "Catalyst"
 

@@ -36,4 +36,8 @@ class Oracle(AbstractOracle):
             free_energy = energy_list[-1]  #ensemble energy is the last in a list of structure-specific energies
         else:
             free_energy = RNA.duplexfold(sequence1, sequence2).energy
+
+        if free_energy > 9999:  #"infinity" for ViennaRNA
+            free_energy = 0
+
         return -free_energy

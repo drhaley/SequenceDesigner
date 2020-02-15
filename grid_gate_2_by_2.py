@@ -27,6 +27,8 @@ forbidden_domain_substrings = [
 	r"[AT]{3}$",
 	r"^[CG]{3}",
 	r"[CG]{3}$",
+	r"^[CG]", #end in A or T
+	r"[CG]$", #end in A or T
 ]
 
 forbidden_strand_substrings = [
@@ -230,11 +232,11 @@ def assemble_strands(sequences):
 	Catalyst = f"{reverse_aliases['c']}{reverse_aliases['b']}{reverse_aliases['f']}"
 
 	aliases[S_left] = "S_left"
-	aliases[V1] = "V1"
-	aliases[V2] = "V2"
+	aliases[V1] = "V_left"
+	aliases[V2] = "V_right"
 	aliases[S_right] = "S_right"
-	aliases[H1] = "H1"
-	aliases[H2] = "H2"
+	aliases[H1] = "H_top"
+	aliases[H2] = "H_bottom"
 	aliases[Scaffold_long] = "Scaffold_long"
 	aliases[Scaffold_short] = "Scaffold_short"
 	aliases[Catalyst] = "Catalyst"

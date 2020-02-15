@@ -21,3 +21,6 @@ user_settings.py
 
 #do not include the sequence output
 sequences/*
+
+#do not include images
+*.svg
