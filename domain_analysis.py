@@ -21,8 +21,6 @@ forbidden_domain_substrings = [
 	r"[AT]{3}$",
 	r"^[CG]{3}",
 	r"[CG]{3}$",
-	r"^[CG]",
-	r"[CG]$",
 ]
 
 forbidden_strand_substrings = [
@@ -32,8 +30,7 @@ forbidden_strand_substrings = [
 
 oracle = Oracle(temperature=25.0, partition_function=False)  # this needs to be fast, so just look at mfe
 
-NUMBER_OF_DOMAINS_PER_SAMPLE = 10000
-NUMBER_OF_DOMAINS_PER_DUAL_SAMPLE = 100
+NUMBER_OF_DOMAINS_PER_SAMPLE = 2000
 
 def main():
     run_single_domain_analysis()
@@ -55,10 +52,10 @@ def run_single_domain_analysis():
             )
 
         if len(sizes) == 1:
-            title = f"Sample of {NUMBER_OF_DOMAINS_PER_SAMPLE} domains of length {list(sizes.values())[0]}"
+            title = f"Sample of {NUMBER_OF_DOMAINS_PER_SAMPLE} domains with length {list(sizes.values())[0]}"
         else:
             lengths_with_commas = ', '.join([str(val) for val in list(sizes.values())])
-            title = f"Sample of {NUMBER_OF_DOMAINS_PER_SAMPLE} domains of lengths {lengths_with_commas}"
+            title = f"Sample of {NUMBER_OF_DOMAINS_PER_SAMPLE} domains with lengths from {{{lengths_with_commas}}}"
         filename = f"affinity_to_complement_{'_'.join([str(val) for val in list(sizes.values())])}.svg"
 
         xlabel = "affinity to complement"
@@ -71,29 +68,30 @@ def run_two_domain_analysis():
             {"staple_domain": 16},
             {"half domain": 8},
     ]:
-        domain_collection = get_many_domains(sizes, NUMBER_OF_DOMAINS_PER_DUAL_SAMPLE)
+        domain_collection_A = iter(get_many_domains(sizes, NUMBER_OF_DOMAINS_PER_SAMPLE))
+        domain_collection_B = iter(get_many_domains(sizes, NUMBER_OF_DOMAINS_PER_SAMPLE))
 
         complementary_affinities = []
         ATC_affinities = []
         ATG_affinities = []
-        for seq1 in domain_collection:
-            for seq2 in domain_collection:
-                if seq1 != seq2:
-                    complementary_affinities.append(
-                        oracle.binding_affinity(seq1, common.wc(seq2))
-                    )
-                    ATC_affinities.append(
-                        oracle.binding_affinity(seq1, seq2)
-                    )
-                    ATG_affinities.append(
-                        oracle.binding_affinity(common.wc(seq1), common.wc(seq2))
-                    )
+        for seq1 in domain_collection_A:
+            seq2 = next(domain_collection_B)
+            if seq1 != seq2:
+                complementary_affinities.append(
+                    oracle.binding_affinity(seq1, common.wc(seq2))
+                )
+                ATC_affinities.append(
+                    oracle.binding_affinity(seq1, seq2)
+                )
+                ATG_affinities.append(
+                    oracle.binding_affinity(common.wc(seq1), common.wc(seq2))
+                )
 
         if len(sizes) == 1:
-            title = f"Sample of {NUMBER_OF_DOMAINS_PER_DUAL_SAMPLE} domains of length {list(sizes.values())[0]}"
+            title = f"Sample of {NUMBER_OF_DOMAINS_PER_SAMPLE} pairs of domains of length {list(sizes.values())[0]}"
         else:
             lengths_with_commas = ', '.join([str(val) for val in list(sizes.values())])
-            title = f"Sample of {NUMBER_OF_DOMAINS_PER_SAMPLE} domains of lengths {lengths_with_commas}"
+            title = f"Sample of {NUMBER_OF_DOMAINS_PER_SAMPLE} pairs of domains with lengths from {{{lengths_with_commas}}}"
 
         filename = f"spurious_complement_{'_'.join([str(val) for val in list(sizes.values())])}.svg"
         xlabel = "spurious complementary binding affinity"
@@ -108,28 +106,28 @@ def run_two_domain_analysis():
         produce_histogram(ATG_affinities, title, xlabel, filename)
 
 def run_heterogeneous_analysis():
-    internal_domain_collection = get_many_domains({"long1": 10, "long2": 11}, NUMBER_OF_DOMAINS_PER_DUAL_SAMPLE)
-    staple_domain_collection = get_many_domains({"staple_domain": 16}, NUMBER_OF_DOMAINS_PER_DUAL_SAMPLE)
+    internal_domain_collection = iter(get_many_domains({"long1": 10, "long2": 11}, NUMBER_OF_DOMAINS_PER_SAMPLE))
+    staple_domain_collection = iter(get_many_domains({"staple_domain": 16}, NUMBER_OF_DOMAINS_PER_SAMPLE))
 
     complementary_affinities = []
     ATC_affinities = []
     ATG_affinities = []
     for seq1 in internal_domain_collection:
-        for seq2 in staple_domain_collection:
-            complementary_affinities.append(
-                oracle.binding_affinity(seq1, common.wc(seq2))
-            )
-            complementary_affinities.append(
-                oracle.binding_affinity(common.wc(seq1), seq2)
-            )
-            ATC_affinities.append(
-                oracle.binding_affinity(seq1, seq2)
-            )
-            ATG_affinities.append(
-                oracle.binding_affinity(common.wc(seq1), common.wc(seq2))
-            )
+        seq2 = next(staple_domain_collection)
+        complementary_affinities.append(
+            oracle.binding_affinity(seq1, common.wc(seq2))
+        )
+        complementary_affinities.append(
+            oracle.binding_affinity(common.wc(seq1), seq2)
+        )
+        ATC_affinities.append(
+            oracle.binding_affinity(seq1, seq2)
+        )
+        ATG_affinities.append(
+            oracle.binding_affinity(common.wc(seq1), common.wc(seq2))
+        )
 
-    title = f"{NUMBER_OF_DOMAINS_PER_DUAL_SAMPLE**2} pairwise samples of length 10,11 domains with length 16 domains"
+    title = f"{NUMBER_OF_DOMAINS_PER_SAMPLE} pairwise samples of length 10,11 domains with length 16 domains"
 
     filename = f"spurious_complement_heterogeneous.svg"
     xlabel = "spurious complementary binding affinity"
@@ -145,8 +143,10 @@ def run_heterogeneous_analysis():
 
 def get_many_domains(sizes, number):
     domain_collection = Collection()
-    for _ in range(number):
-        domain_collection.add(generate_domain(sizes))
+    while(True):
+        domain_collection.add(generate_domain(sizes)) #can produce duplicates
+        if len(domain_collection) >= number:
+            break
 
     return domain_collection
 
