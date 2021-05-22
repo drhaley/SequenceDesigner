@@ -14,7 +14,12 @@ def main():
 	generator = Generator(domain_length = 10, alphabet="ATC")
 	collection = Collection()
 
-	filename = os.path.join("sequences", "example.json")
+	SEQUENCES_DIRECTORY = "sequences"
+
+	if not os.path.exists(SEQUENCES_DIRECTORY):
+		os.makedirs(SEQUENCES_DIRECTORY)
+
+	filename = os.path.join(SEQUENCES_DIRECTORY, "example.json")
 
 	try:
 		collection.load(filename)
@@ -37,7 +42,8 @@ def main():
 			collection.add(sequence)
 			print(f"Accepted {sequence}")
 		except arbiter.Rejection as e:
-			print(f"Rejected {sequence} for reason {e}")
+			pass
+			# print(f"Rejected {sequence} for reason {e}")
 
 	print(list(collection))
 	collection.save(filename)
